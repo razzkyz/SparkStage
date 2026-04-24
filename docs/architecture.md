@@ -43,7 +43,7 @@ Spark Stage is a single-repo app with a React frontend and a Supabase backend.
 - Shared helpers:
   - auth and env access
   - Supabase admin client
-  - Midtrans integration
+  - DOKU integration
   - payment side-effects
 
 ## Current Technical Shape
@@ -54,7 +54,7 @@ Spark Stage is a single-repo app with a React frontend and a Supabase backend.
 - Routing: React Router DOM 7
 - Server-state management: TanStack Query 5
 - Backend client: Supabase JS
-- Payments: Midtrans
+- Payments: DOKU Checkout
 - Localization: i18next
 
 ## Domain Areas
@@ -79,7 +79,7 @@ Spark Stage is a single-repo app with a React frontend and a Supabase backend.
 
 ### Payments
 
-- Midtrans status changes must stay consistent across webhook, sync, and reconciliation.
+- DOKU status changes must stay consistent across webhook, sync, and reconciliation.
 - Ticket issuance, capacity release, stock release, and pickup generation must remain idempotent.
 
 ### Auth And Session Timing

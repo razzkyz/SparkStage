@@ -70,7 +70,7 @@ serve(async (req) => {
     if (!statusResponse.ok) {
       const orderExpiredLocally = Boolean(order.expires_at && new Date(order.expires_at) <= new Date())
       if (!(statusResponse.status === 404 && orderExpiredLocally)) {
-        console.error('[sync-midtrans-status] DOKU status error:', statusData)
+        console.error('[sync-doku-ticket-status] DOKU status error:', statusData)
         return jsonErrorWithDetails(req, 502, {
           error: 'Failed to fetch DOKU status',
           code: 'DOKU_STATUS_FETCH_FAILED',
@@ -117,7 +117,7 @@ serve(async (req) => {
     })
 
     if (result.updateError || result.effectError) {
-      console.error('[sync-midtrans-status] Failed to apply transition:', {
+      console.error('[sync-doku-ticket-status] Failed to apply transition:', {
         updateError: result.updateError,
         effectError: result.effectError,
       })

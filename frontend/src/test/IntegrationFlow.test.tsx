@@ -34,9 +34,10 @@ vi.mock('../utils/bookingStateManager', () => ({
     preserveBookingState: vi.fn()
 }))
 
-// Mock loadSnapScript
-vi.mock('../utils/midtransSnap', () => ({
-    loadSnapScript: vi.fn(() => Promise.resolve())
+// Mock DOKU checkout bootstrap
+vi.mock('../utils/dokuCheckout', () => ({
+    loadDokuCheckoutScript: vi.fn(() => Promise.resolve()),
+    openDokuCheckout: vi.fn()
 }))
 
 // Mock useAuth hook

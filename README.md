@@ -4,7 +4,7 @@ Spark Stage is a fullstack booking ticket and commerce app.
 
 - Frontend: Vite + React + TypeScript in `frontend/`
 - Backend: Supabase Postgres + Edge Functions in `supabase/`
-- Payments: Midtrans
+- Payments: DOKU for tickets and product orders
 
 ## Start Here
 
@@ -33,7 +33,7 @@ Spark studio/
 ## Core Docs
 
 - DB migrations workflow: `docs/runbooks/db-migrations.md`
-- Midtrans payment workflow: `docs/runbooks/midtrans-payments.md`
+- DOKU payment workflow: `docs/runbooks/doku-payments.md`
 - ImageKit migration runbook: `docs/runbooks/imagekit-migration.md`
 - Admin product entry guide: `docs/runbooks/admin-product-entry.md`
 - Voucher behavior and constraints: `docs/decisions/voucher-system.md`
@@ -45,7 +45,7 @@ Spark studio/
 - Node.js 20.19+
 - npm
 - Supabase project access
-- Midtrans account access
+- DOKU merchant access
 
 ### Install
 
@@ -60,15 +60,15 @@ Copy `.env.example` to `.env.local`, then fill in:
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_MIDTRANS_CLIENT_KEY=your_midtrans_client_key
-VITE_MIDTRANS_IS_PRODUCTION=false
+VITE_DOKU_IS_PRODUCTION=false
 ```
 
 Set these only in Supabase secrets, never in the frontend:
 
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `MIDTRANS_SERVER_KEY`
-- `MIDTRANS_IS_PRODUCTION`
+- `DOKU_CLIENT_ID`
+- `DOKU_SECRET_KEY`
+- `DOKU_IS_PRODUCTION`
 
 ## Commands
 

@@ -115,21 +115,3 @@ export async function incrementSoldCapacityOptimistic(
     if (!updateError && Array.isArray(updated) && updated.length > 0) return
   }
 }
-
-export function mapMidtransStatus(transactionStatus: unknown, fraudStatus: unknown): string {
-  const tx = String(transactionStatus || '').toLowerCase()
-  const fraud = fraudStatus == null ? null : String(fraudStatus).toLowerCase()
-
-  if (tx === 'capture') {
-    if (fraud === 'accept' || fraud == null) return 'paid'
-    return 'pending'
-  }
-
-  if (tx === 'settlement') return 'paid'
-  if (tx === 'pending') return 'pending'
-  if (tx === 'expire' || tx === 'expired') return 'expired'
-  if (tx === 'refund' || tx === 'refunded' || tx === 'partial_refund') return 'refunded'
-  if (tx === 'deny' || tx === 'cancel' || tx === 'failure') return 'failed'
-
-  return 'pending'
-}

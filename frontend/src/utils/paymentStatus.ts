@@ -1,6 +1,6 @@
 export type OrderStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'refunded'
 
-export function mapMidtransStatus(
+export function mapPaymentStatus(
   transactionStatus: unknown,
   fraudStatus: unknown
 ): OrderStatus {
@@ -74,4 +74,3 @@ export function getOrderStatusPresentation(status: unknown): {
     description: 'Your session is locked in. We can\'t wait to see your vision come to life at Spark Stage.',
   }
 }
-

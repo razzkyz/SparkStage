@@ -33,7 +33,7 @@ export async function syncBookingSuccessStatus(params: {
   try {
     const data = await withTimeout(
       invokeSupabaseFunction<{ order?: OrderState }>({
-        functionName: 'sync-midtrans-status',
+        functionName: 'sync-doku-ticket-status',
         body: { order_number: orderNumber },
         headers: { Authorization: `Bearer ${token}` },
         fallbackMessage: 'Failed to sync status',

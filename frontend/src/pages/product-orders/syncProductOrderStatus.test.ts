@@ -56,12 +56,12 @@ describe('syncProductOrderStatus', () => {
     });
 
     expect(vi.mocked(invokeSupabaseFunction).mock.calls[0]?.[0]).toMatchObject({
-      functionName: 'sync-midtrans-product-status',
+      functionName: 'sync-doku-product-status',
       body: { order_number: 'ORDER-1' },
       headers: { Authorization: 'Bearer token-1' },
     });
     expect(vi.mocked(invokeSupabaseFunction).mock.calls[1]?.[0]).toMatchObject({
-      functionName: 'sync-midtrans-product-status',
+      functionName: 'sync-doku-product-status',
       body: { order_number: 'ORDER-1' },
       headers: { Authorization: 'Bearer token-2' },
     });

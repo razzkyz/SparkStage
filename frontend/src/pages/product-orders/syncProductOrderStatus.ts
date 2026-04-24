@@ -36,7 +36,7 @@ async function requestProductOrderSync(
 ): Promise<SyncProductOrderStatusResponse> {
   return withTimeout(
     invokeSupabaseFunction<SyncProductOrderStatusResponse>({
-      functionName: 'sync-midtrans-product-status',
+      functionName: 'sync-doku-product-status',
       body: { order_number: orderNumber },
       headers: { Authorization: `Bearer ${accessToken}` },
       fallbackMessage: 'Failed to sync status',

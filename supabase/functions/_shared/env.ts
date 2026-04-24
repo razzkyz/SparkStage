@@ -26,13 +26,6 @@ export function getSupabaseEnv() {
   }
 }
 
-export function getMidtransEnv() {
-  return {
-    serverKey: getRequiredEnv('MIDTRANS_SERVER_KEY'),
-    isProduction: (Deno.env.get('MIDTRANS_IS_PRODUCTION') ?? '').toLowerCase() === 'true',
-  }
-}
-
 export function getDokuEnv() {
   const secretKey =
     Deno.env.get('DOKU_SECRET_KEY') ||

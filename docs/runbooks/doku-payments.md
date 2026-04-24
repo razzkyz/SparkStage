@@ -3,7 +3,7 @@
 ## Scope
 
 This runbook covers ticket payments, product payments, webhook handling, manual sync, and reconciliation.
-The active provider is DOKU Checkout, even though several edge function names still use the old Midtrans naming.
+The active provider is DOKU Checkout.
 
 ## Main Components
 
@@ -17,13 +17,13 @@ The active provider is DOKU Checkout, even though several edge function names st
 
 ### Edge Functions
 
-- `supabase/functions/create-midtrans-token/`
-- `supabase/functions/create-midtrans-product-token/`
+- `supabase/functions/create-doku-ticket-checkout/`
+- `supabase/functions/create-doku-product-checkout/`
 - `supabase/functions/create-cashier-product-order/`
-- `supabase/functions/midtrans-webhook/`
-- `supabase/functions/sync-midtrans-status/`
-- `supabase/functions/sync-midtrans-product-status/`
-- `supabase/functions/reconcile-midtrans-payments/`
+- `supabase/functions/doku-webhook/`
+- `supabase/functions/sync-doku-ticket-status/`
+- `supabase/functions/sync-doku-product-status/`
+- `supabase/functions/reconcile-doku-payments/`
 - shared side-effects in `supabase/functions/_shared/payment-effects.ts`
 
 ## Required Env
@@ -37,21 +37,21 @@ The active provider is DOKU Checkout, even though several edge function names st
 
 ### Ticket Orders
 
-1. Frontend requests a DOKU Checkout session through `create-midtrans-token`.
+1. Frontend requests a DOKU Checkout session through `create-doku-ticket-checkout`.
 2. The function creates a pending order and stores DOKU response data including `payment_url`.
 3. DOKU popup SDK opens with that `payment_url`.
-4. `midtrans-webhook` verifies DOKU signature headers and updates DB state from DOKU notifications.
-5. `sync-midtrans-status` is available as a fallback when status looks stuck.
-6. `reconcile-midtrans-payments` repairs mismatches that slip through or marks truly expired orders after local expiry.
+4. `doku-webhook` verifies DOKU signature headers and updates DB state from DOKU notifications.
+5. `sync-doku-ticket-status` is available as a fallback when status looks stuck.
+6. `reconcile-doku-payments` repairs mismatches that slip through or marks truly expired orders after local expiry.
 
 ### Product Orders
 
 1. Frontend validates voucher preview with `validate_voucher` when needed.
-2. `create-midtrans-product-token` reserves stock and voucher quota, then creates the order.
+2. `create-doku-product-checkout` reserves stock and voucher quota, then creates the order.
 3. Webhook or sync finalizes payment state.
 4. Paid orders generate pickup data.
 5. Failed or expired orders release reserved stock and voucher quota.
-6. If webhook or client sync misses a final state after local payment expiry, `reconcile-midtrans-payments` re-queries DOKU and finalizes the order.
+6. If webhook or client sync misses a final state after local payment expiry, `reconcile-doku-payments` re-queries DOKU and finalizes the order.
 
 ### Cashier Product Orders
 
@@ -59,7 +59,7 @@ The active provider is DOKU Checkout, even though several edge function names st
 2. The order is stored as `channel = 'cashier'` and remains unpaid until admin scans the QR.
 3. `complete-product-pickup` is the moment that marks the order paid and completed for cashier flow.
 4. Expired cashier reservations release reserved stock and voucher quota automatically.
-5. Cashier reservation expiry is enforced by `expire-product-orders`, not by Midtrans sync.
+5. Cashier reservation expiry is enforced by `expire-product-orders`, not by DOKU sync.
 
 ## Reliability Rules
 
@@ -82,11 +82,11 @@ The active provider is DOKU Checkout, even though several edge function names st
 - DOKU checkout creators validate app callback URLs before reserving inventory and roll back created rows on checkout creation failures.
 - Success pages use realtime plus polling fallback instead of assuming a single happy path.
 - Cashier QR expiry and pickup QR expiry are enforced by `expire-product-orders`.
-- Stale online DOKU orders are re-checked by `reconcile-midtrans-payments`.
+- Stale online DOKU orders are re-checked by `reconcile-doku-payments`.
 
 ## Cron Jobs
 
-- `reconcile-midtrans-payments-every-5-minutes`
+- `reconcile-doku-payments-every-5-minutes`
   - every 5 minutes
   - re-checks stale online ticket and product orders whose local expiry has passed
 - `expire-product-orders-every-5-minutes`
@@ -126,7 +126,7 @@ The active provider is DOKU Checkout, even though several edge function names st
 select jobname, schedule, command
 from cron.job
 where jobname in (
-  'reconcile-midtrans-payments-every-5-minutes',
+  'reconcile-doku-payments-every-5-minutes',
   'expire-product-orders-every-5-minutes',
   'expire-tickets-daily',
   'ensure-ticket-availability-daily',

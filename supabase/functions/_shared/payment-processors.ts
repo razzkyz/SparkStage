@@ -33,7 +33,7 @@ export type TransitionResult<TOrder> = {
   skippedReason: string | null
 }
 
-export function isFinalOrPaidMidtransStatus(status: string) {
+export function isFinalOrPaidPaymentStatus(status: string) {
   return status === 'paid' || status === 'expired' || status === 'failed' || status === 'refunded'
 }
 

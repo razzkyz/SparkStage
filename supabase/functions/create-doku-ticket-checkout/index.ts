@@ -86,7 +86,7 @@ async function releaseReservedTicketHolds(params: {
     })
 
     if (error) {
-      console.error('[create-midtrans-token] Failed to release reserved hold:', error)
+      console.error('[create-doku-ticket-checkout] Failed to release reserved hold:', error)
     }
   }
 }
@@ -476,8 +476,8 @@ serve(async (req) => {
     })
 
     const dokuResponseText = await dokuResponse.text().catch(() => '')
-    console.log('[create-midtrans-token] DOKU response status:', dokuResponse.status, dokuResponse.statusText)
-    console.log('[create-midtrans-token] DOKU response body:', dokuResponseText)
+    console.log('[create-doku-ticket-checkout] DOKU response status:', dokuResponse.status, dokuResponse.statusText)
+    console.log('[create-doku-ticket-checkout] DOKU response body:', dokuResponseText)
 
     let dokuData: Record<string, unknown> | null = null
     try {
@@ -487,8 +487,8 @@ serve(async (req) => {
     }
 
     if (!dokuResponse.ok) {
-      console.error('[create-midtrans-token] DOKU error status:', dokuResponse.status)
-      console.error('[create-midtrans-token] DOKU error body:', dokuResponseText)
+      console.error('[create-doku-ticket-checkout] DOKU error status:', dokuResponse.status)
+      console.error('[create-doku-ticket-checkout] DOKU error body:', dokuResponseText)
       await rollbackCreatedTicketOrder({ supabase, orderId: order.id, holds: reservedHolds })
       createdOrderId = null
       reservedHolds = []
@@ -562,8 +562,8 @@ serve(async (req) => {
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error)
     const errStack = error instanceof Error ? error.stack : undefined
-    console.error('[create-midtrans-token] Unhandled error:', errMsg)
-    console.error('[create-midtrans-token] Stack:', errStack)
+    console.error('[create-doku-ticket-checkout] Unhandled error:', errMsg)
+    console.error('[create-doku-ticket-checkout] Stack:', errStack)
     if (supabase && createdOrderId) {
       await rollbackCreatedTicketOrder({ supabase, orderId: createdOrderId, holds: reservedHolds })
     } else if (supabase && reservedHolds.length > 0) {

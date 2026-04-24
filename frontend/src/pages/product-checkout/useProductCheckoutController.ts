@@ -237,7 +237,7 @@ export function useProductCheckoutController({
     setVoucherError(null);
   };
 
-  const createOrder = async (functionName: 'create-midtrans-product-token' | 'create-cashier-product-order') => {
+  const createOrder = async (functionName: 'create-doku-product-checkout' | 'create-cashier-product-order') => {
     if (!user) {
       navigate('/login');
       return null;
@@ -341,7 +341,7 @@ export function useProductCheckoutController({
     setError(null);
 
     try {
-      const payload = (await createOrder('create-midtrans-product-token')) as CreateProductTokenResponse | null;
+      const payload = (await createOrder('create-doku-product-checkout')) as CreateProductTokenResponse | null;
       if (!payload?.payment_url || !payload.order_number) {
         return;
       }

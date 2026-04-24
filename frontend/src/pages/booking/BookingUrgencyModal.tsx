@@ -31,7 +31,7 @@ export function BookingUrgencyModal(props: BookingUrgencyModalProps) {
           <p className="text-sm text-red-800 font-medium mb-2">⚠️ Important Reminders:</p>
           <ul className="text-xs text-red-700 space-y-1">
             <li>• Complete payment within the next few minutes</li>
-            <li>• Midtrans payment window: 15-30 minutes</li>
+            <li>• DOKU payment window: 15-30 minutes</li>
             <li>• You can still book even if session has started</li>
             <li>• Booking closes when session ends (not when it starts)</li>
             <li>• Consider a later session for more flexibility</li>

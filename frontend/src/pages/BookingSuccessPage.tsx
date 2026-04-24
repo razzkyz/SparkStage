@@ -1,5 +1,5 @@
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { getOrderStatusPresentation } from '../utils/midtransStatus';
+import { getOrderStatusPresentation } from '../utils/paymentStatus';
 import { useAuth } from '../contexts/AuthContext';
 import BookingSuccessSkeleton from '../components/skeletons/BookingSuccessSkeleton';
 import { BookingOrderInfo } from './booking-success/BookingOrderInfo';

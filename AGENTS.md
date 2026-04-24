@@ -6,7 +6,7 @@ Spark Stage is a fullstack booking ticket and commerce app.
 
 - Frontend: Vite + React + TypeScript in `frontend/`
 - Backend: Supabase Postgres + Edge Functions in `supabase/`
-- Payments: Midtrans for tickets and product orders
+- Payments: DOKU for tickets and product orders
 
 ## Repo Map
 
@@ -25,7 +25,7 @@ Spark Stage is a fullstack booking ticket and commerce app.
 
 - App structure and module map: `docs/architecture.md`
 - DB change workflow: `docs/runbooks/db-migrations.md`
-- Midtrans payment flow: `docs/runbooks/midtrans-payments.md`
+- DOKU payment flow: `docs/runbooks/doku-payments.md`
 - Voucher behavior: `docs/decisions/voucher-system.md`
 - ImageKit migration status: `docs/runbooks/imagekit-migration.md`
 - Product admin data-entry rules: `docs/runbooks/admin-product-entry.md`
@@ -51,8 +51,8 @@ npm run supabase:functions:serve
 
 ## Risk Zones
 
-- Ticket payment flow: `create-midtrans-token`, `midtrans-webhook`, `sync-midtrans-status`
-- Product payment flow: `create-midtrans-product-token`, `sync-midtrans-product-status`
+- Ticket payment flow: `create-doku-ticket-checkout`, `doku-webhook`, `sync-doku-ticket-status`
+- Product payment flow: `create-doku-product-checkout`, `sync-doku-product-status`
 - Shared payment logic: `supabase/functions/_shared/payment-effects.ts`
 - Session and auth timing: `frontend/src/contexts/AuthContext.tsx`, `frontend/src/hooks/useSessionRefresh.ts`
 - Large route map: `frontend/src/App.tsx`

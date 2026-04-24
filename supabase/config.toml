@@ -41,19 +41,19 @@ enabled = true
 [analytics]
 enabled = false
 
-[functions.create-midtrans-token]
+[functions.create-doku-ticket-checkout]
 verify_jwt = false
 
-[functions.create-midtrans-product-token]
+[functions.create-doku-product-checkout]
 verify_jwt = false
 
 [functions.create-cashier-product-order]
 verify_jwt = false
 
-[functions.sync-midtrans-status]
+[functions.sync-doku-ticket-status]
 verify_jwt = false
 
-[functions.sync-midtrans-product-status]
+[functions.sync-doku-product-status]
 verify_jwt = false
 
 [functions.cancel-product-order]
@@ -77,13 +77,13 @@ verify_jwt = false
 [functions.expire-product-orders]
 verify_jwt = false
 
-[functions.midtrans-webhook]
+[functions.doku-webhook]
 verify_jwt = false
 
 [functions.expire-tickets]
 verify_jwt = false
 
-[functions.reconcile-midtrans-payments]
+[functions.reconcile-doku-payments]
 verify_jwt = false
 
 [functions.retention-cleanup]

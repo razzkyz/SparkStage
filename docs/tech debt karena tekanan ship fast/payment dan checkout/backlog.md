@@ -52,7 +52,7 @@ Yang sengaja di luar sektor ini:
 
 ## File Kunci
 
-- `supabase/functions/create-midtrans-product-token/index.ts`
+- `supabase/functions/create-doku-product-checkout/index.ts`
 - `supabase/functions/create-cashier-product-order/index.ts`
 - `supabase/functions/_shared/payment-processors.ts`
 - `supabase/functions/_shared/payment-effects.ts`

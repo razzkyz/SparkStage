@@ -8,7 +8,7 @@ import {
 } from '../../utils/bookingStateManager';
 import { SessionErrorHandler } from '../../utils/sessionErrorHandler';
 import { buildBookingSuccessState, getPaymentBookingDetails, hasRequiredPaymentDetails } from './paymentHelpers';
-import { createCheckoutPayment, validatePaymentSession } from './paymentMidtrans';
+import { createCheckoutPayment, validatePaymentSession } from './paymentDoku';
 import type { PaymentLocationState, PreservedBookingData } from './paymentTypes';
 
 type UsePaymentPageControllerParams = {

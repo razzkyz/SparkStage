@@ -41,7 +41,7 @@ describe('product order payment helpers', () => {
 
     expect(
       getPaymentMethodLabel({
-        channel: 'midtrans',
+        channel: 'online',
         payment_data: {
           payment_type: 'qris',
         },
