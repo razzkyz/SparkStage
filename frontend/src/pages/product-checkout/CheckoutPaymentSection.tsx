@@ -25,7 +25,7 @@ export function CheckoutPaymentSection({
         <div className="flex items-start gap-3">
           <span className="material-symbols-outlined text-blue-500">info</span>
           <div>
-            <p className="text-sm font-medium text-blue-800">Secure Payment via Midtrans</p>
+            <p className="text-sm font-medium text-blue-800">Secure Payment via DOKU Checkout</p>
             <p className="text-xs text-blue-600 mt-1">
               You can pay using Credit Card, Bank Transfer, E-Wallet (GoPay, OVO, ShopeePay), QRIS, and more.
             </p>

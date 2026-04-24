@@ -4,6 +4,13 @@
 
 Dokumen ini merangkum hasil riset awal untuk migrasi payment gateway dari Midtrans ke DOKU pada repo Spark Stage, lalu menerjemahkannya menjadi checklist kerja bertahap.
 
+Catatan verifikasi repo per 2026-04-24:
+
+- Checklist di bawah dicentang hanya untuk item yang terbukti dari code dan docs di repo.
+- Item yang butuh bukti runtime sandbox, dashboard DOKU, env production, atau operasi manual tetap dibiarkan belum dicentang.
+- Per 2026-04-24, rename codebase ke nama `doku-*` sudah selesai dan edge function baru dengan nama `doku-*` sudah ter-deploy ke Supabase.
+- Function remote lama dengan nama `midtrans-*` belum dihapus karena cutover webhook dashboard DOKU dan cron scheduler remote masih menunggu langkah operasional terakhir.
+
 Asumsi dokumen ini:
 
 - Akun DOKU sudah terverifikasi dan siap dipakai
@@ -180,13 +187,13 @@ Untuk fase migrasi dari Midtrans saat ini, jalur ini tidak menjadi prioritas per
 
 Area yang kemungkinan besar harus disentuh:
 
-- `supabase/functions/create-midtrans-token/`
-- `supabase/functions/create-midtrans-product-token/`
-- `supabase/functions/midtrans-webhook/`
-- `supabase/functions/sync-midtrans-status/`
-- `supabase/functions/sync-midtrans-product-status/`
-- `supabase/functions/reconcile-midtrans-payments/`
-- `supabase/functions/_shared/midtrans.ts`
+- `supabase/functions/create-doku-ticket-checkout/`
+- `supabase/functions/create-doku-product-checkout/`
+- `supabase/functions/doku-webhook/`
+- `supabase/functions/sync-doku-ticket-status/`
+- `supabase/functions/sync-doku-product-status/`
+- `supabase/functions/reconcile-doku-payments/`
+- `supabase/functions/_shared/doku.ts`
 - `supabase/functions/_shared/payment-processors.ts`
 - `supabase/functions/_shared/payment-effects.ts`
 - frontend payment pages dan helper Midtrans
@@ -203,12 +210,12 @@ Ini lebih aman daripada langsung mengganti semua fungsi Midtrans sekaligus dalam
 
 ## Phase 0 - Audit dan desain
 
-- [ ] Inventaris semua titik integrasi Midtrans di frontend, edge functions, dan docs
-- [ ] Pisahkan flow tiket vs flow produk agar migrasi bisa dilakukan tanpa saling mengganggu
-- [ ] Tentukan strategi UX DOKU: redirect atau popup
-- [ ] Tetapkan mapping status internal app terhadap status DOKU
-- [ ] Tetapkan strategi invoice number dan request id yang idempotent
-- [ ] Tetapkan source of truth final status: notification dulu, polling fallback
+- [x] Inventaris semua titik integrasi Midtrans di frontend, edge functions, dan docs
+- [x] Pisahkan flow tiket vs flow produk agar migrasi bisa dilakukan tanpa saling mengganggu
+- [x] Tentukan strategi UX DOKU: redirect atau popup
+- [x] Tetapkan mapping status internal app terhadap status DOKU
+- [x] Tetapkan strategi invoice number dan request id yang idempotent
+- [x] Tetapkan source of truth final status: notification dulu, polling fallback
 
 Checkpoint:
 
@@ -219,15 +226,15 @@ Checkpoint:
 ## Phase 1 - Credential dan konfigurasi
 
 - [ ] Tambahkan env sandbox dan production untuk DOKU:
-- [ ] `DOKU_CLIENT_ID`
-- [ ] `DOKU_SECRET_KEY`
+- [x] `DOKU_CLIENT_ID`
+- [x] `DOKU_SECRET_KEY`
 - [ ] `DOKU_BASE_URL`
 - [ ] `DOKU_CHECKOUT_JS_URL`
 - [ ] `DOKU_NOTIFICATION_URL`
 - [ ] `DOKU_CALLBACK_URL`
-- [ ] Buat helper shared untuk generate signature DOKU Checkout
-- [ ] Buat helper shared untuk request timestamp dan request id
-- [ ] Simpan pemisahan sandbox vs production dengan jelas
+- [x] Buat helper shared untuk generate signature DOKU Checkout
+- [x] Buat helper shared untuk request timestamp dan request id
+- [x] Simpan pemisahan sandbox vs production dengan jelas
 
 Checkpoint:
 
@@ -237,14 +244,14 @@ Checkpoint:
 
 ## Phase 2 - Model data dan persistence
 
-- [ ] Tentukan field tambahan yang perlu disimpan di order tiket dan order produk
+- [x] Tentukan field tambahan yang perlu disimpan di order tiket dan order produk
 - [ ] Minimal simpan:
-- [ ] `provider = doku`
-- [ ] `provider_order_ref` atau `invoice_number`
-- [ ] `provider_request_id`
-- [ ] `payment_url`
-- [ ] `payment_due_at`
-- [ ] `provider_payload`
+- [x] `provider = doku`
+- [x] `provider_order_ref` atau `invoice_number`
+- [x] `provider_request_id`
+- [x] `payment_url`
+- [x] `payment_due_at`
+- [x] `provider_payload`
 - [ ] `provider_status`
 - [ ] Tambahkan migration bila schema sekarang belum cukup
 - [ ] Pastikan idempotency payment attempt bisa dilacak
@@ -256,14 +263,14 @@ Checkpoint:
 
 ## Phase 3 - Backend create payment
 
-- [ ] Buat function baru untuk create checkout payment tiket via DOKU
-- [ ] Buat function baru untuk create checkout payment produk via DOKU
-- [ ] Bentuk request body DOKU dari data order internal
-- [ ] Isi `order.amount`, `invoice_number`, `line_items`, `customer`, callback URL, due date
-- [ ] Kirim header `Client-Id`, `Request-Id`, `Request-Timestamp`, `Signature`
-- [ ] Simpan `payment.url` dan metadata respons
+- [x] Buat function baru untuk create checkout payment tiket via DOKU
+- [x] Buat function baru untuk create checkout payment produk via DOKU
+- [x] Bentuk request body DOKU dari data order internal
+- [x] Isi `order.amount`, `invoice_number`, `line_items`, `customer`, callback URL, due date
+- [x] Kirim header `Client-Id`, `Request-Id`, `Request-Timestamp`, `Signature`
+- [x] Simpan `payment.url` dan metadata respons
 - [ ] Tangani `409 Conflict` idempotency dengan baik
-- [ ] Pastikan rollback stok / kapasitas tetap aman bila create payment gagal
+- [x] Pastikan rollback stok / kapasitas tetap aman bila create payment gagal
 
 Checkpoint:
 
@@ -273,13 +280,13 @@ Checkpoint:
 
 ## Phase 4 - Frontend checkout
 
-- [ ] Ganti pemanggilan Midtrans Snap token menjadi pemanggilan create payment DOKU
+- [x] Ganti pemanggilan Midtrans Snap token menjadi pemanggilan create payment DOKU
 - [ ] Pilih strategi presentasi:
 - [ ] redirect ke `payment.url`, atau
-- [ ] popup memakai `loadJokulCheckout()`
-- [ ] Sesuaikan loading, timeout, dan error state di halaman payment
-- [ ] Pastikan user tetap bisa kembali ke success/pending page setelah redirect
-- [ ] Pastikan state booking / checkout tetap aman bila auth refresh terjadi
+- [x] popup memakai `loadJokulCheckout()`
+- [x] Sesuaikan loading, timeout, dan error state di halaman payment
+- [x] Pastikan user tetap bisa kembali ke success/pending page setelah redirect
+- [x] Pastikan state booking / checkout tetap aman bila auth refresh terjadi
 
 Checkpoint:
 
@@ -289,22 +296,22 @@ Checkpoint:
 
 ## Phase 5 - Notification / webhook DOKU
 
-- [ ] Buat endpoint notification DOKU baru
-- [ ] Verifikasi signature notification sebelum memproses payload
-- [ ] Parse payload secara non-strict
+- [x] Buat endpoint notification DOKU baru
+- [x] Verifikasi signature notification sebelum memproses payload
+- [x] Parse payload secara non-strict
 - [ ] Mapping status notification ke status internal:
-- [ ] `SUCCESS`
-- [ ] `PENDING`
-- [ ] `FAILED`
-- [ ] `EXPIRED`
+- [x] `SUCCESS`
+- [x] `PENDING`
+- [x] `FAILED`
+- [x] `EXPIRED`
 - [ ] Pastikan side effect tetap idempotent:
-- [ ] issue ticket
-- [ ] release capacity
-- [ ] finalize pickup
-- [ ] release stock
-- [ ] voucher usage / release
-- [ ] Balas HTTP `2xx` hanya bila notification sudah diterima dan diproses aman
-- [ ] Simpan log notification mentah untuk audit
+- [x] issue ticket
+- [x] release capacity
+- [x] finalize pickup
+- [x] release stock
+- [x] voucher usage / release
+- [x] Balas HTTP `2xx` hanya bila notification sudah diterima dan diproses aman
+- [x] Simpan log notification mentah untuk audit
 
 Checkpoint:
 
@@ -314,11 +321,11 @@ Checkpoint:
 
 ## Phase 6 - Status sync dan fallback recovery
 
-- [ ] Tentukan apakah Check Status API DOKU akan dipakai pada fase awal
-- [ ] Jika dipakai, buat endpoint sync status terpisah untuk tiket dan produk
-- [ ] Gunakan sync hanya sebagai fallback, bukan jalur utama
-- [ ] Sesuaikan success page dan pending page agar membaca status DOKU
-- [ ] Tangani kasus payment pending, success, failed, expired
+- [x] Tentukan apakah Check Status API DOKU akan dipakai pada fase awal
+- [x] Jika dipakai, buat endpoint sync status terpisah untuk tiket dan produk
+- [x] Gunakan sync hanya sebagai fallback, bukan jalur utama
+- [x] Sesuaikan success page dan pending page agar membaca status DOKU
+- [x] Tangani kasus payment pending, success, failed, expired
 
 Checkpoint:
 
@@ -361,10 +368,10 @@ Checkpoint:
 
 ## Phase 9 - Cleanup pasca cutover
 
-- [ ] Hapus tombol, util, dan flow frontend khusus Midtrans yang tidak dipakai lagi
+- [x] Hapus tombol, util, dan flow frontend khusus Midtrans yang tidak dipakai lagi
 - [ ] Arsipkan atau hapus edge function Midtrans yang sudah obsolete
-- [ ] Rapikan docs dan runbook payment agar DOKU jadi source of truth baru
-- [ ] Tambahkan troubleshooting doc untuk tim client / programmer internal
+- [x] Rapikan docs dan runbook payment agar DOKU jadi source of truth baru
+- [x] Tambahkan troubleshooting doc untuk tim client / programmer internal
 
 Checkpoint:
 

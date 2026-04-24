@@ -72,7 +72,7 @@ export function useMyProductOrdersView({
     return historyOrders;
   }, [activeOrders, activeTab, historyOrders, pendingOrders]);
 
-  const { mutate: autoSyncMidtransProductStatus } = useMutation({
+  const { mutate: autoSyncDokuProductStatus } = useMutation({
     mutationFn: async ({ orderNumber }: { orderNumber: string }) => {
       const token = (await getValidAccessToken()) ?? sessionToken ?? null;
       if (!token) return;
@@ -101,7 +101,7 @@ export function useMyProductOrdersView({
       [0, 20000].forEach((delayMs) => {
         timeoutIds.push(
           window.setTimeout(() => {
-            autoSyncMidtransProductStatus({ orderNumber: order.order_number });
+            autoSyncDokuProductStatus({ orderNumber: order.order_number });
           }, delayMs)
         );
       });
@@ -110,7 +110,7 @@ export function useMyProductOrdersView({
     return () => {
       timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
     };
-  }, [autoSyncMidtransProductStatus, pendingOrders, userId]);
+  }, [autoSyncDokuProductStatus, pendingOrders, userId]);
 
   const handleSyncStatus = useCallback(
     async (order: ProductOrderListItem) => {

@@ -42,7 +42,7 @@ async function releaseReservedProductResources(params: {
   if (params.voucherId) {
     const { error } = await params.supabase.rpc('release_voucher_quota', { p_voucher_id: params.voucherId })
     if (error) {
-      console.error('[create-midtrans-product-token] Failed to release voucher quota:', error)
+      console.error('[create-doku-product-checkout] Failed to release voucher quota:', error)
     }
   }
 
@@ -53,7 +53,7 @@ async function releaseReservedProductResources(params: {
     })
 
     if (error) {
-      console.error('[create-midtrans-product-token] Failed to release reserved stock:', error)
+      console.error('[create-doku-product-checkout] Failed to release reserved stock:', error)
     }
   }
 }
@@ -208,7 +208,7 @@ serve(async (req) => {
       })
 
       if (voucherError) {
-        console.error('[create-midtrans-product-token] Voucher validation error:', voucherError.message)
+        console.error('[create-doku-product-checkout] Voucher validation error:', voucherError.message)
         return jsonErrorWithDetails(req, 500, {
           error: 'Failed to validate voucher',
           code: 'VOUCHER_VALIDATION_ERROR',
@@ -333,7 +333,7 @@ serve(async (req) => {
         reservedAdjustments,
       })
 
-      console.error('[create-midtrans-product-token] Failed to create order:', orderError?.message)
+      console.error('[create-doku-product-checkout] Failed to create order:', orderError?.message)
       return jsonErrorWithDetails(req, 500, {
         error: 'Failed to create order',
         code: 'ORDER_CREATE_FAILED',
@@ -365,7 +365,7 @@ serve(async (req) => {
         reservedAdjustments,
       })
 
-      console.error('[create-midtrans-product-token] Failed to create order items:', itemsError.message)
+      console.error('[create-doku-product-checkout] Failed to create order items:', itemsError.message)
       return jsonErrorWithDetails(req, 500, {
         error: 'Failed to create order items',
         code: 'ORDER_ITEMS_CREATE_FAILED',
@@ -452,7 +452,7 @@ serve(async (req) => {
       reservedVoucherId = null
       reservedAdjustments = []
 
-      console.error('[create-midtrans-product-token] DOKU error:', dokuData)
+      console.error('[create-doku-product-checkout] DOKU error:', dokuData)
       return jsonErrorWithDetails(req, 500, {
         error: 'Failed to create payment checkout',
         code: 'DOKU_CHECKOUT_FAILED',
@@ -541,7 +541,7 @@ serve(async (req) => {
         reservedAdjustments,
       })
     }
-    console.error('[create-midtrans-product-token] Error:', error)
+    console.error('[create-doku-product-checkout] Error:', error)
     return jsonError(req, 500, 'Internal server error')
   }
 })

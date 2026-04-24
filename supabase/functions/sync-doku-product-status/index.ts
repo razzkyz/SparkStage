@@ -15,13 +15,13 @@ import { processProductOrderTransition } from '../_shared/payment-processors.ts'
 import { requireAuthenticatedRequest } from '../_shared/auth.ts'
 
 /**
- * sync-midtrans-product-status
- * 
+ * sync-doku-product-status
+ *
  * Active sync for product orders (BOPIS - Buy Online Pick Up In Store).
- * This function directly queries Midtrans API to get real-time payment status,
+ * This function directly queries DOKU API to get real-time payment status,
  * instead of waiting passively for webhook.
- * 
- * Similar to sync-midtrans-status but for order_products table.
+ *
+ * Similar to sync-doku-ticket-status but for order_products table.
  * Critical: Generates pickup_code when status changes to paid.
  */
 
@@ -83,7 +83,7 @@ serve(async (req) => {
     if (!statusResponse.ok) {
       const orderExpiredLocally = Boolean(order.payment_expired_at && new Date(order.payment_expired_at) <= new Date())
       if (!(statusResponse.status === 404 && orderExpiredLocally)) {
-        console.error('[sync-midtrans-product-status] DOKU status error:', statusData)
+        console.error('[sync-doku-product-status] DOKU status error:', statusData)
         return jsonErrorWithDetails(req, 502, {
           error: 'Failed to fetch DOKU status',
           code: 'DOKU_STATUS_FETCH_FAILED',
@@ -139,7 +139,7 @@ serve(async (req) => {
     })
 
     if (result.updateError || result.effectError) {
-      console.error('[sync-midtrans-product-status] Failed to apply transition:', {
+      console.error('[sync-doku-product-status] Failed to apply transition:', {
         updateError: result.updateError,
         effectError: result.effectError,
       })

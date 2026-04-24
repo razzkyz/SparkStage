@@ -54,7 +54,7 @@ Infinite loading without an exit path is a bug.
 
 Recorded baseline from 2026-02-09:
 
-- scenario: Slow 3G throttle after Midtrans redirect
+- scenario: Slow 3G throttle after DOKU redirect
 - expected: skeleton exits within 20 seconds
 - observed: skeleton exited at 20 seconds
 - manual refresh required: no

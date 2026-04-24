@@ -48,7 +48,7 @@ export async function createCheckoutPayment(params: {
   const invoke = (accessToken: string) =>
     withTimeout(
       invokeSupabaseFunction<CheckoutPaymentResponse>({
-        functionName: 'create-midtrans-token',
+        functionName: 'create-doku-ticket-checkout',
         body: {
           items: [
             {

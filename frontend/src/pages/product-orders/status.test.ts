@@ -15,7 +15,7 @@ describe('product order status helpers', () => {
       payment_status: 'pending',
       status: 'pending',
       pickup_status: null,
-      channel: 'midtrans',
+      channel: 'online',
     };
 
     expect(isPendingPayment(order)).toBe(true);
@@ -28,7 +28,7 @@ describe('product order status helpers', () => {
       payment_status: 'paid',
       status: 'processing',
       pickup_status: 'pending_pickup',
-      channel: 'midtrans',
+      channel: 'online',
     };
 
     expect(isActivePickup(order)).toBe(true);
@@ -40,7 +40,7 @@ describe('product order status helpers', () => {
       payment_status: 'failed',
       status: 'expired',
       pickup_status: 'expired',
-      channel: 'midtrans',
+      channel: 'online',
     };
 
     expect(isHistoryOrder(order)).toBe(true);
@@ -58,7 +58,7 @@ describe('product order status helpers', () => {
     expect(
       shouldRedirectSuccessToPending({
         payment_status: 'pending',
-        channel: 'midtrans',
+        channel: 'online',
       })
     ).toBe(true);
 

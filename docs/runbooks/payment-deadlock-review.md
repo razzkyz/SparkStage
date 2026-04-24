@@ -3,7 +3,7 @@
 ## Scope
 
 - Supabase project: hogzjapnkvsihvvbgcdb
-- Payment flows: Midtrans (ticket + product) and cashier product pickup
+- Payment flows: DOKU Checkout (ticket + product) and cashier product pickup
 - Surfaces: Edge Functions and payment-related RPCs
 
 ## Current Findings (2026-04-07)
@@ -77,7 +77,7 @@ where not bl.granted;
 
 ## References
 
-- `docs/runbooks/midtrans-payments.md`
+- `docs/runbooks/doku-payments.md`
 - `supabase/migrations/20260404100000_add_cancel_product_order_atomic.sql`
 - `supabase/migrations/20260404100100_add_expire_product_order_atomic.sql`
 - `supabase/migrations/20260403193000_add_cashier_product_pickup_atomic.sql`

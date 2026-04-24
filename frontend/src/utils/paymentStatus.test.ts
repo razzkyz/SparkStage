@@ -1,36 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import { getOrderStatusPresentation, mapMidtransStatus } from './midtransStatus'
+import { getOrderStatusPresentation, mapPaymentStatus } from './paymentStatus'
 
-describe('mapMidtransStatus', () => {
+describe('mapPaymentStatus', () => {
   it('maps settlement to paid', () => {
-    expect(mapMidtransStatus('settlement', 'accept')).toBe('paid')
+    expect(mapPaymentStatus('settlement', 'accept')).toBe('paid')
   })
 
   it('maps capture + accept to paid', () => {
-    expect(mapMidtransStatus('capture', 'accept')).toBe('paid')
+    expect(mapPaymentStatus('capture', 'accept')).toBe('paid')
   })
 
   it('maps capture + challenge to pending', () => {
-    expect(mapMidtransStatus('capture', 'challenge')).toBe('pending')
+    expect(mapPaymentStatus('capture', 'challenge')).toBe('pending')
   })
 
   it('maps pending to pending', () => {
-    expect(mapMidtransStatus('pending', null)).toBe('pending')
+    expect(mapPaymentStatus('pending', null)).toBe('pending')
   })
 
   it('maps deny/cancel/failure to failed', () => {
-    expect(mapMidtransStatus('deny', null)).toBe('failed')
-    expect(mapMidtransStatus('cancel', null)).toBe('failed')
-    expect(mapMidtransStatus('failure', null)).toBe('failed')
+    expect(mapPaymentStatus('deny', null)).toBe('failed')
+    expect(mapPaymentStatus('cancel', null)).toBe('failed')
+    expect(mapPaymentStatus('failure', null)).toBe('failed')
   })
 
   it('maps expire to expired', () => {
-    expect(mapMidtransStatus('expire', null)).toBe('expired')
+    expect(mapPaymentStatus('expire', null)).toBe('expired')
   })
 
   it('maps refund variants to refunded', () => {
-    expect(mapMidtransStatus('refund', null)).toBe('refunded')
-    expect(mapMidtransStatus('partial_refund', null)).toBe('refunded')
+    expect(mapPaymentStatus('refund', null)).toBe('refunded')
+    expect(mapPaymentStatus('partial_refund', null)).toBe('refunded')
   })
 })
 
@@ -46,4 +46,3 @@ describe('getOrderStatusPresentation', () => {
     expect(p.title).toBe('Thank You!')
   })
 })
-

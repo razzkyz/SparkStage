@@ -55,7 +55,7 @@ export function PaymentOrderSummary({ bookingDetails }: PaymentOrderSummaryProps
       <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
         <span className="material-symbols-outlined text-primary">verified_user</span>
         <p className="text-xs leading-relaxed text-rose-700">
-          Your payment is secured by Midtrans with 256-bit SSL encryption.
+          Your payment is secured by DOKU with 256-bit SSL encryption.
         </p>
       </div>
     </div>

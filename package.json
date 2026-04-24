@@ -20,10 +20,12 @@
     "supabase:types:check:linked": "node scripts/check-supabase-types-linked.mjs",
     "supabase:release:check": "node scripts/verify-supabase-release.mjs",
     "supabase:functions:deploy:complete-product-pickup": "supabase functions deploy complete-product-pickup",
-    "supabase:functions:deploy:create-midtrans-product-token": "supabase functions deploy create-midtrans-product-token",
-    "supabase:functions:deploy:create-midtrans-token": "supabase functions deploy create-midtrans-token",
-    "supabase:functions:deploy:midtrans-webhook": "supabase functions deploy midtrans-webhook",
-    "supabase:functions:deploy:sync-midtrans-status": "supabase functions deploy sync-midtrans-status",
+    "supabase:functions:deploy:create-doku-product-checkout": "supabase functions deploy create-doku-product-checkout",
+    "supabase:functions:deploy:create-doku-ticket-checkout": "supabase functions deploy create-doku-ticket-checkout",
+    "supabase:functions:deploy:doku-webhook": "supabase functions deploy doku-webhook",
+    "supabase:functions:deploy:sync-doku-ticket-status": "supabase functions deploy sync-doku-ticket-status",
+    "supabase:functions:deploy:sync-doku-product-status": "supabase functions deploy sync-doku-product-status",
+    "supabase:functions:deploy:reconcile-doku-payments": "supabase functions deploy reconcile-doku-payments",
     "supabase:functions:serve": "supabase functions serve"
   },
   "dependencies": {

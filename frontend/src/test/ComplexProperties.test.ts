@@ -139,7 +139,7 @@ describe('Complex Session Properties', () => {
         // We verify that after restoration, the system (PaymentPage) 
         // is designed to call validateSession or similar which we can mock.
 
-        // In our implementation, PaymentPage calls validateSession in handlePayWithMidtrans
+        // In our implementation, PaymentPage calls validateSession in handlePay
         // regardless of whether state was restored.
 
         await fc.assert(

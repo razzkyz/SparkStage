@@ -15,7 +15,7 @@ vi.mock('./product-order-success/useProductOrderSuccessController', () => ({
     order: {
       id: 1,
       order_number: 'ORDER-2',
-      channel: 'midtrans',
+      channel: 'online',
       payment_status: 'paid',
       status: 'processing',
       pickup_code: 'PICKUP-1',

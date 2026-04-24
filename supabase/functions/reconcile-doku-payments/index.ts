@@ -10,7 +10,7 @@ import {
   mapDokuStatus,
 } from '../_shared/doku.ts'
 import {
-  isFinalOrPaidMidtransStatus,
+  isFinalOrPaidPaymentStatus,
   processProductOrderTransition,
   processTicketOrderTransition,
 } from '../_shared/payment-processors.ts'
@@ -138,7 +138,7 @@ async function reconcileStaleTicketOrder(params: {
       nextStatus = providerResult.mappedStatus
     }
 
-    if (!isFinalOrPaidMidtransStatus(nextStatus)) {
+    if (!isFinalOrPaidPaymentStatus(nextStatus)) {
       await logWebhookEvent(supabase, {
         orderNumber: order.order_number,
         eventType: 'reconcile_ticket_still_pending',
@@ -235,7 +235,7 @@ async function reconcileStaleProductOrder(params: {
       nextStatus = providerResult.mappedStatus
     }
 
-    if (!isFinalOrPaidMidtransStatus(nextStatus)) {
+    if (!isFinalOrPaidPaymentStatus(nextStatus)) {
       await logWebhookEvent(supabase, {
         orderNumber: order.order_number,
         eventType: 'reconcile_product_still_pending',
