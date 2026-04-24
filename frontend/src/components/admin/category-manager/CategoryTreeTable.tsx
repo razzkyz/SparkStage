@@ -12,7 +12,7 @@ type CategoryTreeTableProps = {
   onToggleExpanded: (parentId: number) => void;
   onEdit: (category: Category) => void;
   onDelete: (id: number) => void;
-  onToggleActive: (id: number) => void;
+  onToggleActive: (id: number, newStatus: boolean) => void;
 };
 
 const StatusPill = ({ active }: { active: boolean }) => (
@@ -46,7 +46,7 @@ const CategoryRow = ({
   onToggleExpanded: (parentId: number) => void;
   onEdit: (category: Category) => void;
   onDelete: (id: number) => void;
-  onToggleActive: (id: number) => void;
+  onToggleActive: (id: number, newStatus: boolean) => void;
 }) => {
   const children = childrenByParent.get(category.id) ?? [];
   const showToggle = children.length > 0;
@@ -101,7 +101,7 @@ const CategoryRow = ({
           </button>
           <button
             type="button"
-            onClick={() => onToggleActive(category.id)}
+            onClick={() => onToggleActive(category.id, !category.is_active)}
             disabled={loading}
             className={`mr-2 rounded px-2 py-1 text-xs font-bold disabled:opacity-50 ${
               category.is_active
@@ -216,7 +216,7 @@ export function CategoryTreeTable({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onToggleActive(child.id)}
+                      onClick={() => onToggleActive(child.id, !child.is_active)}
                       disabled={loading}
                       className={`mr-2 rounded px-2 py-1 text-xs font-bold disabled:opacity-50 ${
                         child.is_active

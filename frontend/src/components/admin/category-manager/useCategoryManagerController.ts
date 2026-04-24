@@ -143,7 +143,7 @@ export function useCategoryManagerController({ isOpen, onUpdate }: Pick<Category
   );
 
   const handleToggleActive = useCallback(
-    async (id: number) => {
+    async (id: number, newStatus?: boolean) => {
       try {
         setLoading(true);
         setError(null);
@@ -151,7 +151,7 @@ export function useCategoryManagerController({ isOpen, onUpdate }: Pick<Category
         const category = categories.find((c) => c.id === id);
         if (!category) throw new Error('Category not found');
 
-        const newStatus = !category.is_active;
+        const resolvedStatus = newStatus !== undefined ? newStatus : !category.is_active;
         const descendants = getAllDescendants(id, categories);
         const allAffectedIds = [id, ...descendants];
 
@@ -159,7 +159,7 @@ export function useCategoryManagerController({ isOpen, onUpdate }: Pick<Category
         const { error: updateError } = await supabase
           .from('categories')
           .update({
-            is_active: newStatus,
+            is_active: resolvedStatus,
             updated_at: new Date().toISOString(),
           })
           .in('id', allAffectedIds);
@@ -170,7 +170,7 @@ export function useCategoryManagerController({ isOpen, onUpdate }: Pick<Category
         const { error: productUpdateError } = await supabase
           .from('products')
           .update({
-            is_active: newStatus,
+            is_active: resolvedStatus,
             updated_at: new Date().toISOString(),
           })
           .in('category_id', allAffectedIds)
