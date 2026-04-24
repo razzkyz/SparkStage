@@ -62,19 +62,6 @@ const Navbar = () => {
     { key: 'news', label: 'NEWS', to: '/news' },
   ] as const;
 
-  const renderNavItemLabel = (item: (typeof navItems)[number]) => {
-    if (item.key !== 'dressing-room') return item.label;
-    const [top, ...rest] = item.label.split(' ');
-    const bottom = rest.join(' ');
-    return (
-      <span className="block leading-tight text-center">
-        {top}
-        <br />
-        {bottom}
-      </span>
-    );
-  };
-
   const activeIndex = Math.max(0, navItems.findIndex((item) => item.key === activeNavKey));
   const currentLanguage = (i18n.resolvedLanguage ?? i18n.language ?? 'en').toLowerCase();
   const isIndonesian = currentLanguage.startsWith('id');
@@ -337,7 +324,7 @@ const Navbar = () => {
                     className={`text-sm font-semibold uppercase px-4 py-2 transition-colors ${isActive ? 'text-white' : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
-                    {renderNavItemLabel(item)}
+                    {item.label}
                   </Link>
                 );
               })}
@@ -390,7 +377,7 @@ const Navbar = () => {
                     }`}
                 >
                   <span className="relative z-10 block">
-                    {renderNavItemLabel(item)}
+                    {item.label}
                   </span>
                 </Link>
               );
