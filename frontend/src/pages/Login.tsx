@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Logo from '../components/Logo';
+import LoveLogo from '../components/LoveLogo';
+import FallingLoveLogo from '../components/FallingLoveLogo';
 import {
   clearPostAuthRedirect,
   consumePostAuthRedirect,
@@ -96,9 +98,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex relative">
+      {/* Falling Love Logo Animation */}
+      <FallingLoveLogo count={8} className="z-0" />
       {/* Left Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 relative z-10">
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="flex justify-center mb-8">
@@ -107,9 +111,12 @@ const Login = () => {
 
           {/* Welcome Text */}
           <div className="text-center mb-8">
-            <h1 className="font-display text-3xl md:text-4xl text-text-light mb-2">
-              {t('auth.login.title')}
-            </h1>
+            <div className="flex justify-center items-center gap-3 mb-4">
+              <LoveLogo size="md" animated={true} />
+              <h1 className="font-display text-3xl md:text-4xl text-text-light mb-0">
+                {t('auth.login.title')}
+              </h1>
+            </div>
             <p className="text-subtext-light">
               {t('auth.login.subtitle')}
             </p>
@@ -266,12 +273,13 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right Side - Image/Branding */}
+      {/* Right Side - Info Section with LoveLogo */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
         <div className="absolute inset-0 flex items-center justify-center p-12">
           <div className="text-center space-y-6">
-            <h2 className="font-display text-5xl text-text-light">
-              {t('auth.login.branding.joinThe')}{' '}<span className="text-primary">Spark</span>
+            <LoveLogo size="xl" animated={true} />
+            <h2 className="font-display text-5xl text-text-light mt-4">
+              Welcome to Spark Stage
             </h2>
             <p className="text-xl text-subtext-light max-w-md mx-auto">
               {t('auth.login.branding.description')}

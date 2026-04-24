@@ -12,6 +12,7 @@ type CategoryTreeTableProps = {
   onToggleExpanded: (parentId: number) => void;
   onEdit: (category: Category) => void;
   onDelete: (id: number) => void;
+  onToggleActive: (id: number) => void;
 };
 
 const StatusPill = ({ active }: { active: boolean }) => (
@@ -34,6 +35,7 @@ const CategoryRow = ({
   onToggleExpanded,
   onEdit,
   onDelete,
+  onToggleActive,
 }: {
   category: Category;
   level: number;
@@ -44,6 +46,7 @@ const CategoryRow = ({
   onToggleExpanded: (parentId: number) => void;
   onEdit: (category: Category) => void;
   onDelete: (id: number) => void;
+  onToggleActive: (id: number) => void;
 }) => {
   const children = childrenByParent.get(category.id) ?? [];
   const showToggle = children.length > 0;
@@ -98,6 +101,18 @@ const CategoryRow = ({
           </button>
           <button
             type="button"
+            onClick={() => onToggleActive(category.id)}
+            disabled={loading}
+            className={`mr-2 rounded px-2 py-1 text-xs font-bold disabled:opacity-50 ${
+              category.is_active
+                ? 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20'
+                : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
+            }`}
+          >
+            {category.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+          </button>
+          <button
+            type="button"
             onClick={() => onDelete(category.id)}
             disabled={loading}
             className="rounded bg-[#ff4b86]/10 px-2 py-1 text-xs font-bold text-[#ff4b86] hover:bg-[#ff4b86]/20 disabled:opacity-50"
@@ -119,6 +134,7 @@ const CategoryRow = ({
             onToggleExpanded={onToggleExpanded}
             onEdit={onEdit}
             onDelete={onDelete}
+            onToggleActive={onToggleActive}
           />
         ))}
     </Fragment>
@@ -136,6 +152,7 @@ export function CategoryTreeTable({
   onToggleExpanded,
   onEdit,
   onDelete,
+  onToggleActive,
 }: CategoryTreeTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
@@ -176,6 +193,7 @@ export function CategoryTreeTable({
                   onToggleExpanded={onToggleExpanded}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onToggleActive={onToggleActive}
                 />
               ))}
 
@@ -195,6 +213,18 @@ export function CategoryTreeTable({
                       className="mr-2 rounded bg-gray-100 px-2 py-1 text-xs font-bold hover:bg-white/15 disabled:opacity-50"
                     >
                       Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onToggleActive(child.id)}
+                      disabled={loading}
+                      className={`mr-2 rounded px-2 py-1 text-xs font-bold disabled:opacity-50 ${
+                        child.is_active
+                          ? 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20'
+                          : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
+                      }`}
+                    >
+                      {child.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                     </button>
                     <button
                       type="button"

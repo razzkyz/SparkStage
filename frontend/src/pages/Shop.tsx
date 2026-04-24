@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -32,12 +32,16 @@ type ShopResultsProps = {
 
 function ShopResults({ filteredProducts, loading, resetSignal, onPrefetchProduct, onAddToCart }: ShopResultsProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [isAnimating, setIsAnimating] = useState(false);
   const totalProducts = filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalProducts / PRODUCTS_PER_PAGE));
   const page = Math.min(currentPage, totalPages);
 
   useEffect(() => {
     setCurrentPage(1);
+    setIsAnimating(true);
+    const timer = setTimeout(() => setIsAnimating(false), 300);
+    return () => clearTimeout(timer);
   }, [resetSignal]);
 
   const paginatedProducts = useMemo(() => {
@@ -63,13 +67,16 @@ function ShopResults({ filteredProducts, loading, resetSignal, onPrefetchProduct
           <p className="text-sm text-gray-500">No products found for this filter.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {paginatedProducts.map((product) => (
+        <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
+          {paginatedProducts.map((product, index) => (
             <Link
               key={product.id}
               to={`/shop/product/${product.id}`}
               className="group cursor-pointer"
               onMouseEnter={() => onPrefetchProduct(product.id)}
+              style={{
+                animation: isAnimating ? `fadeInUp 0.5s ease-out ${index * 0.05}s both` : 'none'
+              }}
             >
               <div className="rounded-xl border-2 border-gray-100 bg-white overflow-hidden duration-300 ux-transition-color hover:border-[#ff4b86] hover:shadow-lg hover:shadow-pink-100">
                 <div className="relative overflow-hidden aspect-square bg-gray-50">
@@ -168,6 +175,8 @@ const Shop = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const firstCategoryRef = useRef<HTMLButtonElement>(null);
+  const productsRef = useRef<HTMLDivElement>(null);
   const {
     activeCategory,
     activeSubcategory,
@@ -248,6 +257,31 @@ const Shop = () => {
     }
   };
 
+  const scrollToCategory = (index: number) => {
+    const container = document.getElementById('category-scroll-container');
+    if (container) {
+      const buttons = container.querySelectorAll('button');
+      const targetButton = buttons[index];
+      if (targetButton) {
+        targetButton.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
+  };
+
+  const scrollToProducts = () => {
+    if (productsRef.current) {
+      productsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleCategoryChange = () => {
+    scrollToProducts();
+  };
+
+  useEffect(() => {
+    handleCategoryChange();
+  }, [activeCategory, activeSubcategory, activeSubSubcategory]);
+
   const prefetchProduct = (productId: number) => {
     void queryClient.prefetchQuery({
       queryKey: queryKeys.product(productId),
@@ -283,79 +317,115 @@ const Shop = () => {
         </header>
 
         <main className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-          <div className="mb-8 border-b border-gray-100 pb-0 sticky top-0 bg-white z-40 pt-4 -mt-6">
+          <div ref={productsRef} className="mb-8 border-b border-gray-100 pb-0 sticky top-0 bg-white z-40 pt-4 -mt-6">
             <div className="flex flex-col space-y-4">
               <div className="relative w-full max-w-md mx-auto mb-2 px-2">
                 <div className="relative">
                   <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      updateFilters({ q: e.target.value });
-                    }}
-                    placeholder="Search products..."
-                    className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#ff4b86] focus:ring-1 focus:ring-[#ff4b86] ux-transition-color"
-                  />
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  {searchQuery ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery('');
-                        updateFilters({ q: null });
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        updateFilters({ q: e.target.value });
                       }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-200 ux-transition-color"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  ) : null}
+                      placeholder="Search products..."
+                      className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#ff4b86] focus:ring-1 focus:ring-[#ff4b86] ux-transition-color"
+                    />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    {searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery('');
+                          updateFilters({ q: null });
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-200 ux-transition-color"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    ) : null}
                 </div>
               </div>
 
-              <div className="flex space-x-6 overflow-x-auto w-full pb-0 hide-scrollbar px-2 justify-center md:justify-start">
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateFilters({
-                      category: null,
-                      subcategory: null,
-                      subsubcategory: null,
-                    });
-                  }}
-                  className={`text-sm whitespace-nowrap pb-3 border-b-2 px-2 ux-transition-color ${
-                    activeCategory === 'all'
-                      ? 'font-semibold text-[#ff4b86] border-[#ff4b86]'
-                      : 'font-semibold text-gray-500 border-transparent hover:text-[#ff4b86]'
-                  }`}
-                >
-                  All Products
-                </button>
-                {parentCategories.map((category) => (
+              <div className="relative">
+                <div className="flex items-center">
                   <button
                     type="button"
-                    key={category.slug}
                     onClick={() => {
-                      updateFilters({
-                        category: category.slug,
-                        subcategory: null,
-                        subsubcategory: null,
-                      });
+                      const container = document.getElementById('category-scroll-container');
+                      if (container) {
+                        container.scrollBy({ left: -200, behavior: 'smooth' });
+                      }
                     }}
-                    className={`text-sm whitespace-nowrap pb-3 border-b-2 px-2 ux-transition-color ${
-                      activeCategory === category.slug
-                        ? 'font-semibold text-[#ff4b86] border-[#ff4b86]'
-                        : 'font-semibold text-gray-500 border-transparent hover:text-[#ff4b86]'
-                    }`}
+                    className="absolute left-0 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all duration-200 border border-gray-200 hover:shadow-xl hover:scale-105 md:p-2.5 md:block hidden"
                   >
-                    {category.name}
+                    <ChevronLeft className="w-3 h-3 md:w-4 md:h-4 text-gray-700" />
                   </button>
-                ))}
+                  
+                  <div 
+                    id="category-scroll-container"
+                    className="flex space-x-4 md:space-x-6 overflow-x-auto w-full pb-0 hide-scrollbar px-8 md:px-12 justify-center md:justify-start scroll-smooth"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateFilters({
+                          category: null,
+                          subcategory: null,
+                          subsubcategory: null,
+                        });
+                        scrollToCategory(0);
+                      }}
+                      className={`text-sm whitespace-nowrap pb-3 border-b-2 px-2 ux-transition-color ${
+                        activeCategory === 'all'
+                          ? 'font-semibold text-[#ff4b86] border-[#ff4b86]'
+                          : 'font-semibold text-gray-500 border-transparent hover:text-[#ff4b86]'
+                      }`}
+                    >
+                      All Products
+                    </button>
+                    {parentCategories.map((category, index) => (
+                      <button
+                        type="button"
+                        key={category.slug}
+                        ref={index === 0 ? firstCategoryRef : null}
+                        onClick={() => {
+                          updateFilters({
+                            category: category.slug,
+                            subcategory: null,
+                            subsubcategory: null,
+                          });
+                          scrollToCategory(index + 1);
+                        }}
+                        className={`text-sm whitespace-nowrap pb-3 border-b-2 px-2 ux-transition-color ${
+                          activeCategory === category.slug
+                            ? 'font-semibold text-[#ff4b86] border-[#ff4b86]'
+                            : 'font-semibold text-gray-500 border-transparent hover:text-[#ff4b86]'
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const container = document.getElementById('category-scroll-container');
+                      if (container) {
+                        container.scrollBy({ left: 200, behavior: 'smooth' });
+                      }
+                    }}
+                    className="absolute right-0 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all duration-200 border border-gray-200 hover:shadow-xl hover:scale-105 md:p-2.5 md:block hidden"
+                  >
+                    <ChevronRight className="w-3 h-3 md:w-4 md:h-4 text-gray-700" />
+                  </button>
+                </div>
               </div>
 
               {activeCategory !== 'all' && activeSubcategories.length > 0 ? (
                 <div className="w-full justify-center md:justify-start flex overflow-x-auto hide-scrollbar pb-2 px-2">
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 md:gap-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -364,7 +434,7 @@ const Shop = () => {
                           subsubcategory: null,
                         });
                       }}
-                      className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
+                      className={`px-3 md:px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
                         activeSubcategory === 'all'
                           ? 'bg-[#ff4b86] text-white border-[#ff4b86] shadow-sm'
                           : 'bg-white text-gray-500 border-gray-200 hover:border-[#ff4b86] hover:text-[#ff4b86]'
@@ -382,7 +452,7 @@ const Shop = () => {
                             subsubcategory: null,
                           });
                         }}
-                        className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
+                        className={`px-3 md:px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
                           activeSubcategory === subcategory.slug
                             ? 'bg-[#ff4b86] text-white border-[#ff4b86] shadow-sm'
                             : 'bg-white text-gray-500 border-gray-200 hover:border-[#ff4b86] hover:text-[#ff4b86]'
@@ -391,74 +461,6 @@ const Shop = () => {
                         {subcategory.name}
                       </button>
                     ))}
-                    {activeCategory === 'charm' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateFilters({
-                              subcategory: 'newest-group',
-                              subsubcategory: null,
-                            });
-                          }}
-                          className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
-                            activeSubcategory === 'newest-group'
-                              ? 'bg-[#ff4b86] text-white border-[#ff4b86] shadow-sm'
-                              : 'bg-white text-gray-500 border-gray-200 hover:border-[#ff4b86] hover:text-[#ff4b86]'
-                          }`}
-                        >
-                          Newest Charm
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateFilters({
-                              subcategory: 'bestseller-group',
-                              subsubcategory: null,
-                            });
-                          }}
-                          className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
-                            activeSubcategory === 'bestseller-group'
-                              ? 'bg-[#ff4b86] text-white border-[#ff4b86] shadow-sm'
-                              : 'bg-white text-gray-500 border-gray-200 hover:border-[#ff4b86] hover:text-[#ff4b86]'
-                          }`}
-                        >
-                          Best Seller
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateFilters({
-                              subcategory: 'gold-group',
-                              subsubcategory: null,
-                            });
-                          }}
-                          className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
-                            activeSubcategory === 'gold-group'
-                              ? 'bg-[#ff4b86] text-white border-[#ff4b86] shadow-sm'
-                              : 'bg-white text-gray-500 border-gray-200 hover:border-[#ff4b86] hover:text-[#ff4b86]'
-                          }`}
-                        >
-                          Gold
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateFilters({
-                              subcategory: 'silver-group',
-                              subsubcategory: null,
-                            });
-                          }}
-                          className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
-                            activeSubcategory === 'silver-group'
-                              ? 'bg-[#ff4b86] text-white border-[#ff4b86] shadow-sm'
-                              : 'bg-white text-gray-500 border-gray-200 hover:border-[#ff4b86] hover:text-[#ff4b86]'
-                          }`}
-                        >
-                          Silver
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
               ) : null}

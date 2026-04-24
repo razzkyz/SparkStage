@@ -50,6 +50,7 @@ export default function CategoryManager({ isOpen, onClose, onUpdate }: CategoryM
             onToggleExpanded={controller.toggleExpanded}
             onEdit={controller.handleEdit}
             onDelete={(id) => void controller.handleDelete(id)}
+            onToggleActive={(id, newStatus) => void controller.handleToggleActive(id, newStatus)}
           />
         </div>
       </div>

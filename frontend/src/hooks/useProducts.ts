@@ -165,7 +165,7 @@ async function fetchProductSummaries(signal?: AbortSignal) {
             id,
             name,
             description,
-            categories(slug),
+            categories(slug, is_active),
             product_images(image_url, is_primary, display_order),
             product_variants(id, name, price, is_active, stock, reserved_stock)
           `
@@ -178,7 +178,13 @@ async function fetchProductSummaries(signal?: AbortSignal) {
       1000
     );
 
-    return rows.map(transformProductSummary);
+    // Filter out products from inactive categories
+    return rows
+      .filter((row) => {
+        const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+        return !category || category.is_active;
+      })
+      .map(transformProductSummary);
   } catch (error) {
     if (didTimeout()) {
       throw new Error('Request timeout');
@@ -201,7 +207,7 @@ async function fetchProductPickerOptions(signal?: AbortSignal) {
             `
             id,
             name,
-            categories(slug),
+            categories(slug, is_active),
             product_images(image_url, is_primary, display_order),
             product_variants(price, is_active)
           `
@@ -214,7 +220,13 @@ async function fetchProductPickerOptions(signal?: AbortSignal) {
       1000
     );
 
-    return rows.map(transformProductPickerOption);
+    // Filter out products from inactive categories
+    return rows
+      .filter((row) => {
+        const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+        return !category || category.is_active;
+      })
+      .map(transformProductPickerOption);
   } catch (error) {
     if (didTimeout()) {
       throw new Error('Request timeout');

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
   emptyCategoryDraft,
+  getAllDescendants,
   getChildrenByParent,
   getOrphanChildren,
   getParentNameMap,
@@ -141,6 +142,54 @@ export function useCategoryManagerController({ isOpen, onUpdate }: Pick<Category
     [fetchCategories, onUpdate]
   );
 
+  const handleToggleActive = useCallback(
+    async (id: number) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const category = categories.find((c) => c.id === id);
+        if (!category) throw new Error('Category not found');
+
+        const newStatus = !category.is_active;
+        const descendants = getAllDescendants(id, categories);
+        const allAffectedIds = [id, ...descendants];
+
+        // Update all affected categories (parent and descendants)
+        const { error: updateError } = await supabase
+          .from('categories')
+          .update({
+            is_active: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .in('id', allAffectedIds);
+
+        if (updateError) throw updateError;
+
+        // Also update all products in these categories to match the new status
+        const { error: productUpdateError } = await supabase
+          .from('products')
+          .update({
+            is_active: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .in('category_id', allAffectedIds)
+          .is('deleted_at', null); // Only update non-deleted products
+
+        if (productUpdateError) throw productUpdateError;
+
+        await fetchCategories();
+        onUpdate();
+      } catch (caughtError) {
+        console.error('Error toggling category status:', caughtError);
+        setError(caughtError instanceof Error ? caughtError.message : 'Failed to toggle category status');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [categories, fetchCategories, onUpdate]
+  );
+
   const parentOptions = useMemo(() => getParentOptions(categories, editingId), [categories, editingId]);
   const parents = useMemo(() => getParents(categories), [categories]);
   const childrenByParent = useMemo(() => getChildrenByParent(categories), [categories]);
@@ -173,6 +222,7 @@ export function useCategoryManagerController({ isOpen, onUpdate }: Pick<Category
     handleNew,
     handleSave,
     handleDelete,
+    handleToggleActive,
     toggleExpanded,
     parentOptions,
     parents,

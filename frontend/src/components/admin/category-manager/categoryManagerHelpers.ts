@@ -68,3 +68,23 @@ export const getOrphanChildren = (categories: Category[]): Category[] => {
 
 export const getParentNameMap = (categories: Category[]): Map<number, string> =>
   new Map(categories.map((category) => [category.id, category.name]));
+
+export const getAllDescendants = (categoryId: number, categories: Category[]): number[] => {
+  const descendants: number[] = [];
+  const queue = [categoryId];
+  const visited = new Set<number>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) continue;
+    visited.add(current);
+
+    const children = categories.filter((c) => c.parent_id === current);
+    children.forEach((child) => {
+      descendants.push(child.id);
+      queue.push(child.id);
+    });
+  }
+
+  return descendants;
+};

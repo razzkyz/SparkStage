@@ -109,6 +109,7 @@ async function fetchInventoryPageDirect(
     .order('id', { ascending: true })
     .range(from, to);
 
+  // Apply active filter - only filter when specifically active or inactive
   if (filters.activeFilter === 'active') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query = (query as any).eq('is_active', true);
@@ -116,6 +117,7 @@ async function fetchInventoryPageDirect(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query = (query as any).eq('is_active', false);
   }
+  // When activeFilter is empty (""), show both active and inactive products
 
   query = applyInventoryFilters(query, filters);
   const { data, error, count } = await query;
