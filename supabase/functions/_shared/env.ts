@@ -74,5 +74,17 @@ export function getAllowedAppOrigins(): string[] {
 }
 
 export function getPublicAppUrl(): string | null {
-  return getAllowedAppOrigins()[0] ?? null
+  const preferredValues = [
+    Deno.env.get('PUBLIC_APP_URL'),
+    Deno.env.get('APP_URL'),
+    Deno.env.get('SITE_URL'),
+    Deno.env.get('VITE_PUBLIC_APP_URL'),
+    Deno.env.get('VITE_APP_URL'),
+  ]
+
+  const preferred = preferredValues
+    .map((value) => (typeof value === 'string' ? normalizeUrl(value) : ''))
+    .find(Boolean)
+
+  return preferred || getAllowedAppOrigins()[0] || null
 }
