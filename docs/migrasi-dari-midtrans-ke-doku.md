@@ -52,6 +52,12 @@ Catatan status operasional per 2026-04-25:
 - Cutover production dasar sudah lolos untuk scope launch awal yang dibatasi.
 - Sisa backlog utama per 2026-04-25 sekarang didominasi hardening engineering, test automation, dan cleanup pasca-cutover.
 
+Catatan operasional tambahan per 2026-04-26:
+
+- seluruh monitor UptimeRobot yang sebelumnya dipakai untuk warm-up flow Midtrans sudah dicopot
+- tidak ada lagi traffic internal yang sengaja "menghangatkan Midtrans" edge functions
+- dokumentasi repo tidak lagi memperlakukan UptimeRobot warm-up sebagai komponen aktif dari arsitektur payment
+
 Asumsi dokumen ini:
 
 - Akun DOKU sudah terverifikasi dan siap dipakai
@@ -741,7 +747,7 @@ Bagian ini sengaja ditandai non-blocking. Jalankan setelah soft launch stabil, b
 
 ## Penilaian Progress Migrasi
 
-Per 2026-04-25, estimasi progress migrasi Midtrans ke DOKU dinilai di **85%**.
+Per 2026-04-25 setelah batch hardening dan deploy terakhir, estimasi progress migrasi Midtrans ke DOKU dinaikkan menjadi **89%**.
 
 Penjelasannya:
 
@@ -752,13 +758,17 @@ Penjelasannya:
   - flow bayar kasir produk juga sudah lolos
   - webhook, redirect balik ke app, dan side effect utama sudah terbukti jalan pada smoke test terbatas
 
-- **Sekitar 75% untuk engineering completion / hardening penuh**
-  - pembatasan payment methods dari sisi payload / code belum final
-  - automated test untuk webhook retry, idempotency, sync, dan invariant side effect belum lengkap
-  - channel `SNAP` belum siap dibuka ke publik
+- **Sekitar 84% untuk engineering completion / hardening penuh**
+  - pembatasan payment methods dari sisi payload / code sekarang sudah dipasang untuk scope launch awal
+  - guard mode production vs sandbox sudah ditambahkan agar mismatch lebih cepat terdeteksi
+  - automated test coverage untuk webhook replay, transition regression, dan sebagian helper sync/status sudah bertambah
+  - query audit dan runbook early-live sudah dirapikan
+  - namun test automation end-to-end untuk retry, delayed webhook, sync/reconciliation, dan invariant side effect lintas tabel masih belum lengkap
+  - channel `SNAP` tetap belum siap dibuka ke publik
   - cleanup akhir function / secret Midtrans lama belum selesai
 
 Kesimpulan praktis:
 
+- progress memang **naik sedikit** dari 85% ke 89% karena backlog kritis untuk scope launch awal sudah berkurang
 - untuk **soft launch terbatas**, migrasi ini sudah sangat dekat selesai dan layak dipakai
 - untuk disebut **100% selesai secara engineering**, masih ada pekerjaan hardening, test automation, dan cleanup pasca-cutover
