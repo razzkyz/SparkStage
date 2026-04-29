@@ -44,8 +44,7 @@ const Navbar = () => {
     if (path.startsWith('/on-stage')) return 'on-stage';
     if (path.startsWith('/events')) return 'event';
     if (path.startsWith('/shop')) return 'shop';
-    // Dressing Room nonaktif, fallback ke 'on-stage'
-    if (path.startsWith('/dressing-room') || path.startsWith('/fashion')) return 'on-stage';
+    if (path.startsWith('/dressing-room') || path.startsWith('/fashion')) return 'dressing-room';
     if (path.startsWith('/beauty') || path.startsWith('/glam')) return 'glam';
     if (path.startsWith('/charm-bar') || path.startsWith('/chamr-bar')) return 'charm-bar';
     if (path.startsWith('/news')) return 'news';
@@ -55,7 +54,7 @@ const Navbar = () => {
   const navItems = [
     { key: 'on-stage', label: 'ON STAGE', to: '/on-stage' },
     { key: 'glam', label: 'GLAM', to: '/glam' },
-    // { key: 'dressing-room', label: 'DRESSING ROOM', to: '/dressing-room' }, // Nonaktifkan Dressing Room
+    { key: 'dressing-room', label: 'FASHION ON DEMAND', to: '/dressing-room' },
     { key: 'charm-bar', label: 'CHARM BAR', to: '/charm-bar' },
     { key: 'shop', label: 'SPARK CLUB', to: '/shop' },
     { key: 'event', label: 'CELEBRATE', to: '/events' },
