@@ -181,7 +181,7 @@ serve(async (req) => {
 
     const aggregatedItemsByVariant = new Map<
       number,
-      { productVariantId: number; name: string; quantity: number }
+      { productVariantId: number; name: string; quantity: number; sentPrice: number }
     >();
     for (const item of normalizedItems) {
       const existing = aggregatedItemsByVariant.get(item.productVariantId);
@@ -192,6 +192,7 @@ serve(async (req) => {
           productVariantId: item.productVariantId,
           name: item.name,
           quantity: item.quantity,
+          sentPrice: item.price,
         });
       }
     }
@@ -249,7 +250,12 @@ serve(async (req) => {
           `Variant not found: ${item.productVariantId}`,
         );
       }
-      const unitPrice = toNumber((variant as { price: unknown }).price, 0);
+      
+      // Use the price sent from frontend if provided (for rental items with custom pricing)
+      // Otherwise fall back to database price for regular items
+      const dbPrice = toNumber((variant as { price: unknown }).price, 0);
+      const unitPrice = item.sentPrice > 0 ? item.sentPrice : dbPrice;
+      
       if (unitPrice <= 0) {
         return jsonError(
           req,
