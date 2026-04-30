@@ -173,6 +173,8 @@ serve(async (req) => {
       quantity: Math.max(1, Math.floor(toNumber(i.quantity, 1))),
     }));
 
+    console.log("[create-doku-product-checkout] Normalized items:", JSON.stringify(normalizedItems));
+
     if (
       normalizedItems.some((i) => !i.productVariantId || !i.name || i.price < 0)
     ) {
@@ -270,6 +272,9 @@ serve(async (req) => {
       (sum, item) => sum + item.unitPrice * item.quantity,
       0,
     );
+
+    console.log("[create-doku-product-checkout] Resolved items:", JSON.stringify(resolvedItems));
+    console.log("[create-doku-product-checkout] Total amount:", totalAmount);
     const orderNumber = `PRD-${Date.now()}-${
       Math.random().toString(36).substring(2, 7).toUpperCase()
     }`;
@@ -474,6 +479,9 @@ serve(async (req) => {
     }
 
     const finalTotal = totalAmount - discountAmount;
+
+    console.log("[create-doku-product-checkout] Discount amount:", discountAmount);
+    console.log("[create-doku-product-checkout] Final total for DOKU:", finalTotal);
 
     const { data: order, error: orderError } = await supabase
       .from("order_products")
