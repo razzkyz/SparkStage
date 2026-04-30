@@ -52,17 +52,6 @@ export default function CartPage() {
       }, 0);
   }, [items, selectedItems]);
 
-  const selectedDeposit = useMemo(() => {
-    return items
-      .filter((i) => selectedItems.has(i.variantId))
-      .reduce((sum, i) => {
-        if (i.isRental && i.depositAmount) {
-          return sum + i.depositAmount * i.quantity;
-        }
-        return sum;
-      }, 0);
-  }, [items, selectedItems]);
-
   const selectedCount = selectedItems.size;
 
   return (
@@ -218,9 +207,26 @@ export default function CartPage() {
                         {/* Price */}
                         <div className="text-right">
                           <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5 hidden sm:block">Total</p>
-                          <p className="font-serif text-sm sm:text-lg text-[#e63d75] font-medium">
-                            {formatCurrency(item.unitPrice * item.quantity)}
-                          </p>
+                          {item.isRental && item.depositAmount && item.rentalDailyRate && item.rentalDurationDays ? (
+                            <div className="text-right">
+                              <p className="font-serif text-sm sm:text-lg text-[#e63d75] font-medium">
+                                {formatCurrency(item.unitPrice * item.quantity)}
+                              </p>
+                              <p className="text-[10px] text-gray-500">
+                                Harga: {formatCurrency((item.unitPrice - item.depositAmount - (item.rentalDailyRate * item.rentalDurationDays)) * item.quantity)}
+                              </p>
+                              <p className="text-[10px] text-gray-500">
+                                Sewa: {formatCurrency(item.rentalDailyRate * item.rentalDurationDays * item.quantity)}
+                              </p>
+                              <p className="text-[10px] text-yellow-700">
+                                Deposit: {formatCurrency(item.depositAmount * item.quantity)}
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="font-serif text-sm sm:text-lg text-[#e63d75] font-medium">
+                              {formatCurrency(item.unitPrice * item.quantity)}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -248,19 +254,13 @@ export default function CartPage() {
                     <span>Subtotal</span>
                     <span className="font-medium text-gray-900">{formatCurrency(selectedSubtotal)}</span>
                   </div>
-                  {selectedDeposit > 0 && (
-                    <div className="flex justify-between text-yellow-700">
-                      <span>Deposit</span>
-                      <span className="font-medium text-gray-900">{formatCurrency(selectedDeposit)}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between text-gray-600">
                     <span>Tax (Included)</span>
                     <span className="font-medium text-gray-900">-</span>
                   </div>
                   <div className="border-t border-dashed border-gray-200 pt-4 mt-6 flex justify-between items-baseline">
                     <span className="font-medium text-lg text-gray-900">Total</span>
-                    <span className="font-serif text-2xl text-[#e63d75]">{formatCurrency(selectedSubtotal + selectedDeposit)}</span>
+                    <span className="font-serif text-2xl text-[#e63d75]">{formatCurrency(selectedSubtotal)}</span>
                   </div>
                 </div>
 

@@ -24,6 +24,10 @@ export function mapCheckoutOrderItems(items: CartItem[]): CheckoutOrderItem[] {
     quantity: item.quantity,
     unit_price: item.unitPrice,
     subtotal: item.unitPrice * item.quantity,
+    is_rental: item.isRental,
+    deposit_amount: item.depositAmount,
+    rental_daily_rate: item.rentalDailyRate,
+    rental_duration_days: item.rentalDurationDays,
   }));
 }
 

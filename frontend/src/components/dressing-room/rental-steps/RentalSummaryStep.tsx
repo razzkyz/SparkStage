@@ -54,7 +54,7 @@ export default function RentalSummaryStep({
         const itemDailyFee = DAILY_FEE_PER_ITEM;
         const itemDeposit = price * 0.75; // 75% of product price
         const itemTotalRentalCost = itemDailyFee * rentalData.durationDays;
-        const itemTotal = price + itemDeposit + itemTotalRentalCost; // price + deposit + rental cost
+        const itemTotal = price + itemDeposit + itemTotalRentalCost; // product price + deposit + rental cost
 
         addItem(
           {
@@ -63,7 +63,7 @@ export default function RentalSummaryStep({
             productImageUrl: item.product_variant.product?.image_url || undefined,
             variantId: item.product_variant.id,
             variantName: item.product_variant.name,
-            unitPrice: itemTotal, // Total: price + deposit + rental cost
+            unitPrice: itemTotal, // Total: product price + deposit + rental cost
             isRental: true,
             rentalDailyRate: itemDailyFee,
             rentalDurationDays: rentalData.durationDays,
@@ -151,7 +151,7 @@ export default function RentalSummaryStep({
               const itemDailyFee = DAILY_FEE_PER_ITEM;
               const itemDeposit = price * 0.75; // 75% of product price
               const itemRentalCost = itemDailyFee * rentalData.durationDays;
-              const itemTotal = price + itemDeposit + itemRentalCost;
+              const itemTotal = price + itemDeposit + itemRentalCost; // product price + deposit + rental cost
 
               return (
                 <div key={item.id} className="rounded-lg bg-gray-50 p-3 text-sm space-y-1">
