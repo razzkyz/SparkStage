@@ -4,8 +4,8 @@ import { Check, FileText, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 import type { RentalFormData } from '../RentalFlowModal';
 import { RentalProductGallery } from '../RentalProductGallery';
-import { invokeSupabaseFunction } from '../../../lib/supabaseFunctionInvoke';
-import { supabase } from '../../../lib/supabase';
+import { useCart } from '../../../contexts/cartStore';
+import { useNavigate } from 'react-router-dom';
 
 interface RentalSummaryStepProps {
   rentalData: RentalFormData;
@@ -18,6 +18,8 @@ export default function RentalSummaryStep({
 }: RentalSummaryStepProps) {
   const [agreedToTC, setAgreedToTC] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { addItem } = useCart();
+  const navigate = useNavigate();
 
   // Calculate costs
   const totalRentalCost = rentalData.look.items.reduce((sum, item) => {
@@ -36,51 +38,28 @@ export default function RentalSummaryStep({
   const handleConfirm = async () => {
     setIsProcessing(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
+      // Add all items to cart
+      for (const item of rentalData.look.items) {
+        if (!item.product_variant?.id || !item.product_variant?.name) continue;
+
+        addItem(
+          {
+            productId: item.product_variant.product?.id || 0,
+            productName: item.product_variant.product?.name || item.label || 'Unknown',
+            productImageUrl: item.product_variant.product?.image_url || undefined,
+            variantId: item.product_variant.id,
+            variantName: item.product_variant.name,
+            unitPrice: item.product_variant.price || 0,
+          },
+          1
+        );
       }
 
-      const items = rentalData.look.items.map((item) => ({
-        productVariantId: item.product_variant_id,
-        productName: item.product_variant?.name || item.label || 'Unknown',
-        dailyRate: item.product_variant?.price || 0,
-        depositAmount: item.product_variant?.deposit_amount || Math.ceil((item.product_variant?.price || 0) * 0.75),
-        quantity: 1,
-        initialCondition: rentalData.initialCondition?.[item.id],
-      }));
-
-      const data = await invokeSupabaseFunction<{
-        payment_provider: string;
-        payment_url: string;
-        payment_sdk_url: string;
-        payment_due_date: string;
-        order_number: string;
-        order_id: number;
-      }>({
-        functionName: 'create-doku-rental-checkout',
-        body: {
-          items,
-          durationDays: rentalData.durationDays,
-          rentalStartTime: rentalData.rentalStartTime.toISOString(),
-          rentalEndTime: rentalData.rentalEndTime.toISOString(),
-          customerName: rentalData.customerData.fullName,
-          customerEmail: rentalData.customerData.email,
-          customerPhone: rentalData.customerData.phone,
-          customerAddress: rentalData.customerData.address,
-          initialCondition: rentalData.initialCondition,
-        },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        fallbackMessage: 'Failed to create payment checkout',
-      });
-
-      // Redirect to DOKU payment page
-      if (data.payment_url) {
-        window.location.href = data.payment_url;
-      }
+      // Navigate to cart page
+      navigate('/cart');
     } catch (error) {
-      console.error('Payment checkout error:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create payment checkout');
+      console.error('Failed to add to cart:', error);
+      alert(error instanceof Error ? error.message : 'Failed to add items to cart');
     } finally {
       setIsProcessing(false);
     }

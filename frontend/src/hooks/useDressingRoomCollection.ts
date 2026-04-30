@@ -87,13 +87,13 @@ async function fetchDressingRoomCollection(slug?: string) {
       product_variant_id,
       label,
       sort_order,
-      product_variants!inner (
+      product_variants (
         id,
         name,
         sku,
         price,
         deposit_amount,
-        products!inner (
+        products (
           id,
           name,
           slug,

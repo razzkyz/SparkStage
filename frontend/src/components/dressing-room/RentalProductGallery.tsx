@@ -65,6 +65,9 @@ export function RentalProductGallery({ look, showPricing = false, durationDays =
             <h3 className="mt-2 font-bold text-lg text-gray-900">
               {product?.name}
             </h3>
+            <p className="mt-1 text-sm font-semibold text-main-600">
+              {selectedItem.product_variant?.name}
+            </p>
             {selectedItem.label && (
               <p className="mt-1 text-sm text-gray-600 italic">
                 {selectedItem.label}

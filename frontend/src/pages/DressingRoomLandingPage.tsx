@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Heart, ShieldCheck, Zap, ArrowRight, Star } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
@@ -8,6 +8,7 @@ import { DRESSING_ROOM_DEMO } from '../mock/dressingRoomDemo';
 import { useDressingRoomCollection, type DressingRoomLook as DBLook } from '../hooks/useDressingRoomCollection';
 import { useProductSummaries, type ProductSummary } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
+import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import RentalFlowModal from '../components/dressing-room/RentalFlowModal';
 import { buildShopCategoryIndex } from './shop/buildShopCategoryIndex';
@@ -49,6 +50,7 @@ function productToLook(product: ProductSummary): DBLook {
 }
 
 export default function DressingRoomLandingPage() {
+  const { user } = useAuth();
   const { collection, looks: dbLooks, isLoading: looksLoading } = useDressingRoomCollection();
   const { data: allProducts = [], isLoading: productsLoading } = useProductSummaries();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -57,6 +59,13 @@ export default function DressingRoomLandingPage() {
   const activeCategory = 'dressing-room';
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
   const [activeSubSubcategory, setActiveSubSubcategory] = useState<string>('all');
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      window.location.href = '/login';
+    }
+  }, [user]);
 
   const displayLooks = dbLooks.length > 0 ? dbLooks : [];
 
