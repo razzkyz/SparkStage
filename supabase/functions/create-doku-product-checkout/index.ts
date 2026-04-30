@@ -218,6 +218,8 @@ serve(async (req) => {
       return jsonError(req, 500, "Failed to load product variants");
     }
 
+    console.log("[create-doku-product-checkout] Variant rows from DB:", JSON.stringify(variantRows));
+
     const variantMap = new Map<
       number,
       {
@@ -265,12 +267,16 @@ serve(async (req) => {
       const dbPrice = toNumber((variant as { price: unknown }).price, 0);
       const unitPrice = item.sentPrice > 0 ? item.sentPrice : dbPrice;
 
+      console.log(
+        `[create-doku-product-checkout] Variant ${item.productVariantId}: sentPrice=${item.sentPrice}, dbPrice=${dbPrice}, unitPrice=${unitPrice}`
+      );
+
       if (item.sentPrice === 0) {
         console.warn(
           `[create-doku-product-checkout] Variant ${item.productVariantId} sentPrice is 0, falling back to dbPrice: ${dbPrice}`
         );
       }
-      
+
       if (unitPrice <= 0) {
         return jsonError(
           req,
@@ -288,6 +294,20 @@ serve(async (req) => {
 
     console.log("[create-doku-product-checkout] Resolved items:", JSON.stringify(resolvedItems));
     console.log("[create-doku-product-checkout] Total amount:", totalAmount);
+
+    // Debug: return resolved items in response for frontend debugging
+    const debugInfo = {
+      normalizedItems: normalizedItems.map((i) => ({
+        productVariantId: i.productVariantId,
+        price: i.price,
+      })),
+      resolvedItems: resolvedItems.map((i) => ({
+        productVariantId: i.productVariantId,
+        unitPrice: i.unitPrice,
+      })),
+      totalAmount,
+    };
+    console.log("[create-doku-product-checkout] Debug info:", JSON.stringify(debugInfo));
     const orderNumber = `PRD-${Date.now()}-${
       Math.random().toString(36).substring(2, 7).toUpperCase()
     }`;
@@ -1007,6 +1027,18 @@ serve(async (req) => {
       order_number: orderNumber,
       order_id: orderId,
       discount_amount: discountAmount, // Include discount for frontend display
+      _debug: {
+        normalizedItems: normalizedItems.map((i) => ({
+          productVariantId: i.productVariantId,
+          price: i.price,
+        })),
+        resolvedItems: resolvedItems.map((i) => ({
+          productVariantId: i.productVariantId,
+          unitPrice: i.unitPrice,
+        })),
+        totalAmount,
+        finalTotal,
+      },
     });
   } catch (error) {
     if (supabase && createdOrderId) {

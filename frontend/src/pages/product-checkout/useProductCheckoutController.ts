@@ -293,7 +293,12 @@ export function useProductCheckoutController({
     };
 
     try {
-      return await invoke(token);
+      const response = await invoke(token);
+      console.log('[useProductCheckoutController] Backend response:', response);
+      if (response && '_debug' in response) {
+        console.log('[useProductCheckoutController] Debug info:', response._debug);
+      }
+      return response;
     } catch (error) {
       if (getSupabaseFunctionStatus(error) === 401) {
         await refreshSession();
