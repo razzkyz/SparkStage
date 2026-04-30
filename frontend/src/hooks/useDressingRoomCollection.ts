@@ -13,6 +13,7 @@ export interface DressingRoomLookItem {
         name: string;
         sku: string;
         price: number | null;
+        deposit_amount: number | null;
         product: {
             id: number;
             name: string;
@@ -91,6 +92,7 @@ async function fetchDressingRoomCollection(slug?: string) {
         name,
         sku,
         price,
+        deposit_amount,
         products!inner (
           id,
           name,
@@ -156,6 +158,7 @@ async function fetchDressingRoomCollection(slug?: string) {
                     name: raw.product_variants.name,
                     sku: raw.product_variants.sku,
                     price: raw.product_variants.price,
+                    deposit_amount: raw.product_variants.deposit_amount,
                     product: raw.product_variants.products ? {
                         id: raw.product_variants.products.id,
                         name: raw.product_variants.products.name,

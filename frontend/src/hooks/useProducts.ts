@@ -10,6 +10,7 @@ export interface ProductSummary {
   price: number;
   originalPrice?: number;
   image?: string;
+  images?: string[];
   badge?: string;
   placeholder?: string;
   categorySlug?: string | null;
@@ -82,6 +83,28 @@ function getPrimaryImage(productImages: ProductImageRow[] | undefined) {
   ).image_url;
 }
 
+function getAllImages(productImages: ProductImageRow[] | undefined) {
+  if (!Array.isArray(productImages) || productImages.length === 0) return [];
+
+  const normalizedImages = productImages
+    .map((image) => ({
+      image_url: typeof image.image_url === 'string' ? image.image_url : '',
+      is_primary: Boolean(image.is_primary),
+      display_order: toNumber(image.display_order, 0),
+    }))
+    .filter((image) => image.image_url);
+
+  if (normalizedImages.length === 0) return [];
+
+  // Sort: primary first, then by display_order
+  return normalizedImages
+    .sort((a, b) => {
+      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+      return a.display_order - b.display_order;
+    })
+    .map((img) => img.image_url);
+}
+
 function getActiveVariants(value: unknown): ProductVariantRow[] {
   if (!Array.isArray(value)) return [];
   return value.filter((variant): variant is ProductVariantRow => Boolean(variant));
@@ -90,6 +113,7 @@ function getActiveVariants(value: unknown): ProductVariantRow[] {
 function transformProductSummary(row: ProductRow): ProductSummary {
   const variants = getActiveVariants(row.product_variants);
   const image = getPrimaryImage(row.product_images);
+  const images = getAllImages(row.product_images);
   let priceMin = Number.POSITIVE_INFINITY;
   let defaultVariantId: number | undefined;
   let defaultVariantName: string | undefined;
@@ -119,6 +143,7 @@ function transformProductSummary(row: ProductRow): ProductSummary {
     description: typeof row.description === 'string' ? row.description : String(row.description ?? ''),
     price: priceMin,
     image,
+    images: images.length > 0 ? images : undefined,
     placeholder: image ? undefined : 'inventory_2',
     categorySlug: typeof row.categories?.slug === 'string' ? row.categories.slug : null,
     defaultVariantId,
