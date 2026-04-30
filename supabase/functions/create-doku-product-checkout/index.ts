@@ -181,6 +181,12 @@ serve(async (req) => {
       return jsonError(req, 400, "Invalid items");
     }
 
+    // Log items with price 0 to debug rental pricing issues
+    const zeroPriceItems = normalizedItems.filter((i) => i.price === 0);
+    if (zeroPriceItems.length > 0) {
+      console.warn("[create-doku-product-checkout] Items with price 0:", JSON.stringify(zeroPriceItems));
+    }
+
     const aggregatedItemsByVariant = new Map<
       number,
       { productVariantId: number; name: string; quantity: number; sentPrice: number }
@@ -188,7 +194,22 @@ serve(async (req) => {
     for (const item of normalizedItems) {
       const existing = aggregatedItemsByVariant.get(item.productVariantId);
       if (existing) {
-        existing.quantity += item.quantity;
+        // If same variant has different price (e.g., rental with different duration), keep them separate
+        if (existing.sentPrice !== item.price) {
+          console.warn(
+            `[create-doku-product-checkout] Variant ${item.productVariantId} has different prices: ${existing.sentPrice} vs ${item.price}. Keeping separate.`
+          );
+          // Generate a unique key by appending price to variant ID
+          const uniqueKey = Number(`${item.productVariantId}${item.price}`);
+          aggregatedItemsByVariant.set(uniqueKey, {
+            productVariantId: item.productVariantId,
+            name: item.name,
+            quantity: item.quantity,
+            sentPrice: item.price,
+          });
+        } else {
+          existing.quantity += item.quantity;
+        }
       } else {
         aggregatedItemsByVariant.set(item.productVariantId, {
           productVariantId: item.productVariantId,
@@ -257,6 +278,12 @@ serve(async (req) => {
       // Otherwise fall back to database price for regular items
       const dbPrice = toNumber((variant as { price: unknown }).price, 0);
       const unitPrice = item.sentPrice > 0 ? item.sentPrice : dbPrice;
+
+      if (item.sentPrice === 0) {
+        console.warn(
+          `[create-doku-product-checkout] Variant ${item.productVariantId} sentPrice is 0, falling back to dbPrice: ${dbPrice}`
+        );
+      }
       
       if (unitPrice <= 0) {
         return jsonError(
@@ -587,6 +614,9 @@ serve(async (req) => {
       category: "beauty",
       type: "PHYSICAL",
     }));
+
+    console.log("[create-doku-product-checkout] DOKU line items:", JSON.stringify(lineItems));
+    console.log("[create-doku-product-checkout] DOKU total amount:", finalTotal);
 
     if (discountAmount > 0) {
       lineItems.push({
