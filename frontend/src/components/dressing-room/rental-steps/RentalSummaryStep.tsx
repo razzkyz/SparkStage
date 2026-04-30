@@ -39,7 +39,11 @@ export default function RentalSummaryStep({
     setIsProcessing(true);
     try {
       // Add all items to cart
+      console.log('Rental data items:', rentalData.look.items);
       for (const item of rentalData.look.items) {
+        console.log('Adding item to cart:', item);
+        console.log('Product variant:', item.product_variant);
+        console.log('Product:', item.product_variant?.product);
         if (!item.product_variant?.id || !item.product_variant?.name) continue;
 
         const dailyRate = item.product_variant.price || 0;
