@@ -6,7 +6,6 @@ import RentalDurationStep from './rental-steps/RentalDurationStep';
 import RentalConditionStep from './rental-steps/RentalConditionStep';
 import RentalCustomerStep from './rental-steps/RentalCustomerStep';
 import RentalSummaryStep from './rental-steps/RentalSummaryStep';
-import { useToast } from '../Toast';
 
 export interface RentalFormData {
   look: DressingRoomLook;
@@ -24,9 +23,6 @@ export interface RentalFormData {
     email: string;
     phone: string;
     address: string;
-    bankName: string;
-    bankAccount: string;
-    accountHolder: string;
   };
 }
 
@@ -34,14 +30,12 @@ interface RentalFlowModalProps {
   look: DressingRoomLook;
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (rentalData: RentalFormData) => void;
 }
 
 type Step = 'duration' | 'condition' | 'customer' | 'summary';
 
-export default function RentalFlowModal({ look, isOpen, onClose, onConfirm }: RentalFlowModalProps) {
+export default function RentalFlowModal({ look, isOpen, onClose }: RentalFlowModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('duration');
-  const toast = useToast();
   
   const [formData, setFormData] = useState<RentalFormData>({
     look,
@@ -54,9 +48,6 @@ export default function RentalFlowModal({ look, isOpen, onClose, onConfirm }: Re
       email: '',
       phone: '',
       address: '',
-      bankName: '',
-      bankAccount: '',
-      accountHolder: '',
     },
   });
 
@@ -76,15 +67,6 @@ export default function RentalFlowModal({ look, isOpen, onClose, onConfirm }: Re
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
     }
-  };
-
-  const handleConfirm = () => {
-    if (!formData.customerData.fullName || !formData.customerData.email || !formData.customerData.phone) {
-      toast?.showToast('error', 'Mohon isi data customer');
-      return;
-    }
-    onConfirm(formData);
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -154,7 +136,6 @@ export default function RentalFlowModal({ look, isOpen, onClose, onConfirm }: Re
                   key="summary"
                   rentalData={formData}
                   onPrev={handlePrev}
-                  onConfirm={handleConfirm}
                 />
               )}
             </AnimatePresence>

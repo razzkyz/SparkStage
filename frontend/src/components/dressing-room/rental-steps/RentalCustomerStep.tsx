@@ -31,9 +31,6 @@ export default function RentalCustomerStep({
     if (!formData.email.includes('@')) newErrors.email = 'Email tidak valid';
     if (!formData.phone.trim()) newErrors.phone = 'No HP/WA wajib diisi';
     if (!formData.address.trim()) newErrors.address = 'Alamat wajib diisi';
-    if (!formData.bankName.trim()) newErrors.bankName = 'Nama bank wajib diisi';
-    if (!formData.bankAccount.trim()) newErrors.bankAccount = 'No rekening wajib diisi';
-    if (!formData.accountHolder.trim()) newErrors.accountHolder = 'Nama pemilik rekening wajib diisi';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -50,9 +47,6 @@ export default function RentalCustomerStep({
     { key: 'email', label: 'Email', type: 'email', required: true },
     { key: 'phone', label: 'No HP / WhatsApp', type: 'tel', required: true, placeholder: '62812xxxxx' },
     { key: 'address', label: 'Alamat Pengiriman', type: 'textarea', required: true },
-    { key: 'bankName', label: 'Nama Bank', type: 'text', required: true, placeholder: 'BRI / BCA / Mandiri / dsb' },
-    { key: 'bankAccount', label: 'No Rekening', type: 'text', required: true },
-    { key: 'accountHolder', label: 'Nama Pemilik Rekening', type: 'text', required: true },
   ];
 
   return (
@@ -71,7 +65,7 @@ export default function RentalCustomerStep({
       {/* Info */}
       <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-900 border border-blue-200">
         <p className="font-semibold mb-2">👤 Data Pribadi Wajib Lengkap</p>
-        <p className="text-xs">Data ini digunakan untuk invoice, reminder pengembalian, dan refund transfer. Pastikan semua terisi dengan benar.</p>
+        <p className="text-xs">Data ini digunakan untuk invoice dan reminder pengembalian. Pastikan semua terisi dengan benar.</p>
       </div>
 
       {/* Form */}
@@ -126,12 +120,13 @@ export default function RentalCustomerStep({
       <div className="rounded-lg bg-gray-50 p-4 text-xs text-gray-700 space-y-2">
         <p className="font-semibold text-gray-900">📋 Syarat & Ketentuan Deposit</p>
         <ul className="space-y-1 list-disc list-inside">
-          <li><span className="font-semibold">Telat:</span> 5rb per jam (maksimal 1 hari = 120rb)</li>
-          <li><span className="font-semibold">Bernoda:</span> -10rb per noda</li>
-          <li><span className="font-semibold">Kancing copot:</span> -10rb per item</li>
+          <li><span className="font-semibold">Telat:</span> Rp 5.000 per jam</li>
+          <li><span className="font-semibold">Bernoda:</span> -Rp 10.000</li>
+          <li><span className="font-semibold">Kancing copot:</span> -Rp 10.000</li>
           <li><span className="font-semibold">Rusak parah/sobek:</span> Deposit item hangus</li>
-          <li><span className="font-semibold">Hilang:</span> Ganti rugi full value</li>
+          <li><span className="font-semibold">Kerusakan &gt; deposit:</span> Bayar selisih</li>
         </ul>
+        <p className="text-[10px] text-gray-500 mt-2 italic">Refund = Deposit - Telat - Kerusakan</p>
       </div>
 
       {/* Buttons */}

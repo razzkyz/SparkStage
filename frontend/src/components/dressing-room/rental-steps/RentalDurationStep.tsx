@@ -31,10 +31,11 @@ export default function RentalDurationStep({
     return sum + dailyRate * durationDays;
   }, 0);
 
-  // Calculate total deposit
+  // Calculate total deposit (per item, different per item)
   const totalDeposit = look.items.reduce((sum, item) => {
-    // Assuming deposit is 50-100% of item price
-    const deposit = Math.ceil((item.product_variant?.price || 0) * 0.75);
+    const price = item.product_variant?.price || 0;
+    // Use deposit_amount if set, otherwise fallback to 75% of price
+    const deposit = item.product_variant?.deposit_amount || Math.ceil(price * 0.75);
     return sum + deposit;
   }, 0);
 
@@ -124,7 +125,7 @@ export default function RentalDurationStep({
         <div className="max-h-64 space-y-2 overflow-y-auto">
           {look.items.map((item) => {
             const dailyRate = item.product_variant?.price || 0;
-            const deposit = Math.ceil(dailyRate * 0.75);
+            const deposit = item.product_variant?.deposit_amount || Math.ceil(dailyRate * 0.75);
             const totalItemCost = dailyRate * durationDays;
 
             return (

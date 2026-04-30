@@ -581,6 +581,8 @@ export default function CharmBar() {
             onPrefetchProduct={prefetchProduct}
             onAddToCart={handleAddToCart}
           />
+
+       
         </main>
       </div>
     </PageTransition>

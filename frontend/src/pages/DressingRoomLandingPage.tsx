@@ -3,36 +3,107 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, Heart, ShieldCheck, Zap, ArrowRight, Star } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { HeroCarousel } from '../components/dressing-room/HeroCarousel';
+import { ProductImageCarousel } from '../components/dressing-room/ProductImageCarousel';
 import { DRESSING_ROOM_DEMO } from '../mock/dressingRoomDemo';
 import { useDressingRoomCollection, type DressingRoomLook as DBLook } from '../hooks/useDressingRoomCollection';
-import { useProductSummaries } from '../hooks/useProducts';
-import { useToast } from '../components/Toast';
+import { useProductSummaries, type ProductSummary } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
 import { formatCurrency } from '../utils/formatters';
-import RentalFlowModal, { type RentalFormData } from '../components/dressing-room/RentalFlowModal';
+import RentalFlowModal from '../components/dressing-room/RentalFlowModal';
+import { buildShopCategoryIndex } from './shop/buildShopCategoryIndex';
+import { filterShopProducts } from './shop/filterShopProducts';
+
+// Helper to convert ProductSummary to DressingRoomLook for single product rental
+function productToLook(product: ProductSummary): DBLook {
+  return {
+    id: 0, // Temporary ID
+    collection_id: 0,
+    look_number: 0,
+    model_image_url: product.image || '',
+    model_name: null,
+    sort_order: 0,
+    items: [
+      {
+        id: product.id,
+        look_id: 0,
+        product_variant_id: product.defaultVariantId || 0,
+        label: product.name,
+        sort_order: 0,
+        resolved_image_url: product.image || null,
+        product_variant: {
+          id: product.defaultVariantId || 0,
+          name: product.defaultVariantName || product.name,
+          sku: '',
+          price: product.price,
+          deposit_amount: null, // Will be calculated as 75% of price
+          product: {
+            id: product.id,
+            name: product.name,
+            slug: '',
+            image_url: product.image || null,
+          },
+        },
+      },
+    ],
+  };
+}
 
 export default function DressingRoomLandingPage() {
   const { collection, looks: dbLooks, isLoading: looksLoading } = useDressingRoomCollection();
   const { data: allProducts = [], isLoading: productsLoading } = useProductSummaries();
-  const toast = useToast();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const [selectedLook, setSelectedLook] = useState<DBLook | null>(null);
   const [showRentalModal, setShowRentalModal] = useState(false);
+  const activeCategory = 'dressing-room';
+  const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
+  const [activeSubSubcategory, setActiveSubSubcategory] = useState<string>('all');
 
   const displayLooks = dbLooks.length > 0 ? dbLooks : [];
 
   const title = collection?.title || DRESSING_ROOM_DEMO.title;
   const description = collection?.description || DRESSING_ROOM_DEMO.description;
 
+  // Build category index for filtering
+  const { parentCategories, childCategoriesByParentSlug, allowedSlugMap } = useMemo(
+    () => buildShopCategoryIndex(categories),
+    [categories]
+  );
+
+  // Get dressing-room category and its subcategories
+  const dressingRoomCategory = parentCategories.find(c => c.slug === 'dressing-room');
+  const dressingRoomSubcategories = useMemo(() => {
+    if (!dressingRoomCategory) return [];
+    return childCategoriesByParentSlug.get(dressingRoomCategory.slug) ?? [];
+  }, [dressingRoomCategory, childCategoriesByParentSlug]);
+
+  // Get sub-subcategories for the active subcategory
+  const activeSubSubcategories = useMemo(() => {
+    if (activeSubcategory === 'all') return [];
+    return childCategoriesByParentSlug.get(activeSubcategory) ?? [];
+  }, [activeSubcategory, childCategoriesByParentSlug]);
+
+  // Filter products based on selected category/subcategory
+  const filteredProducts = useMemo(
+    () =>
+      filterShopProducts({
+        products: allProducts,
+        activeCategory,
+        activeSubcategory,
+        activeSubSubcategory,
+        searchQuery: '',
+        allowedSlugMap,
+        bestSellerIds: [],
+      }),
+    [allProducts, activeCategory, activeSubcategory, activeSubSubcategory, allowedSlugMap]
+  );
+
   // Collect all model images from looks for carousel
   const carouselImages = displayLooks
     .map((look) => look.model_image_url)
     .filter((url) => url && typeof url === 'string');
 
-  // Filter products by dressing-room category
-  const dressingRoomProducts = useMemo(() => {
-    return allProducts.filter((product) => product.categorySlug === 'dressing-room');
-  }, [allProducts]);
 
-  if (looksLoading || productsLoading) {
+  if (looksLoading || productsLoading || categoriesLoading) {
     return (
       <PageTransition>
         <div className="min-h-screen bg-white flex items-center justify-center">
@@ -44,14 +115,6 @@ export default function DressingRoomLandingPage() {
       </PageTransition>
     );
   }
-
-  const handleRentalConfirm = (rentalData: RentalFormData) => {
-    // TODO: Handle rental submission to backend
-    console.log('Rental confirmed:', rentalData);
-    toast?.showToast('success', 'Pesanan sewa berhasil dibuat! Invoice akan dikirim ke email Anda.');
-    setShowRentalModal(false);
-    setSelectedLook(null);
-  };
 
   return (
     <PageTransition>
@@ -327,20 +390,97 @@ export default function DressingRoomLandingPage() {
                 Koleksi Kami
               </p>
               <h2 className="mt-4 font-serif text-4xl italic text-gray-900 sm:text-5xl">
-                Pilih Look Favoritmu
+                Pilih Produk Favoritmu
               </h2>
               <p className="mt-4 text-gray-600 max-w-2xl">
-                Ratusan kombinasi outfit tersedia. Setiap look sudah dikurasi dengan cermat untuk Anda.
+                Ribuan koleksi fashion pilihan tersedia untuk disewa. Dari dress, jeans, outer, hingga aksesoris - semua ada di sini!
               </p>
             </div>
 
-            {dressingRoomProducts.length === 0 ? (
+            {/* Category Navigation */}
+            <div className="mb-8 border-b border-gray-100 pb-0 sticky top-0 bg-gray-50 z-40 pt-4 -mt-6">
+              <div className="flex flex-col space-y-4">
+                {/* Subcategories */}
+                {dressingRoomSubcategories.length > 0 ? (
+                  <div className="w-full justify-center md:justify-start flex overflow-x-auto hide-scrollbar pb-2 px-2">
+                    <div className="flex gap-1.5 md:gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveSubcategory('all');
+                          setActiveSubSubcategory('all');
+                        }}
+                        className={`px-3 md:px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${
+                          activeSubcategory === 'all'
+                            ? 'bg-main-500 text-white border-main-500 shadow-sm'
+                            : 'bg-white text-gray-500 border-gray-200 hover:border-main-500 hover:text-main-500'
+                        }`}
+                      >
+                        Semua
+                      </button>
+                      {dressingRoomSubcategories.map((subcategory) => (
+                        <button
+                          key={subcategory.slug}
+                          type="button"
+                          onClick={() => {
+                            setActiveSubcategory(subcategory.slug);
+                            setActiveSubSubcategory('all');
+                          }}
+                          className={`px-3 md:px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${
+                            activeSubcategory === subcategory.slug
+                              ? 'bg-main-500 text-white border-main-500 shadow-sm'
+                              : 'bg-white text-gray-500 border-gray-200 hover:border-main-500 hover:text-main-500'
+                          }`}
+                        >
+                          {subcategory.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Sub-subcategories */}
+                {activeSubcategory !== 'all' && activeSubSubcategories.length > 0 ? (
+                  <div className="w-full justify-center md:justify-start flex overflow-x-auto hide-scrollbar pb-3 px-2">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveSubSubcategory('all')}
+                        className={`px-4 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap border transition-colors ${
+                          activeSubSubcategory === 'all'
+                            ? 'bg-main-500/10 text-main-500 border-main-500/30'
+                            : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-main-500/50 hover:text-main-500'
+                        }`}
+                      >
+                        Semua {dressingRoomSubcategories.find(s => s.slug === activeSubcategory)?.name || ''}
+                      </button>
+                      {activeSubSubcategories.map((subcategory) => (
+                        <button
+                          key={subcategory.slug}
+                          type="button"
+                          onClick={() => setActiveSubSubcategory(subcategory.slug)}
+                          className={`px-4 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap border transition-colors ${
+                            activeSubSubcategory === subcategory.slug
+                              ? 'bg-main-500/10 text-main-500 border-main-500/30'
+                              : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-main-500/50 hover:text-main-500'
+                          }`}
+                        >
+                          {subcategory.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {filteredProducts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">Tidak ada produk dressing room yang tersedia saat ini.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {dressingRoomProducts.map((product, idx) => (
+                {filteredProducts.map((product, idx) => (
                   <motion.div
                     key={product.id}
                     className="group cursor-pointer text-left"
@@ -348,25 +488,21 @@ export default function DressingRoomLandingPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
                     viewport={{ once: true }}
+                    onClick={() => {
+                      setSelectedLook(productToLook(product));
+                      setShowRentalModal(true);
+                    }}
                   >
                     <div className="rounded-xl border-2 border-gray-100 bg-white overflow-hidden duration-300 hover:border-main-500 hover:shadow-lg hover:shadow-pink-100 transition-all">
-                      <div className="relative overflow-hidden aspect-square bg-gray-50">
-                        {product.image ? (
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            loading="lazy"
-                            decoding="async"
-                            onError={(event) => {
-                              event.currentTarget.src = '/images/landing/neon.png';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                            <span className="material-symbols-outlined text-gray-400 text-5xl">image</span>
-                          </div>
-                        )}
+                      <div className="relative overflow-hidden aspect-square bg-gray-50 group">
+                        <ProductImageCarousel
+                          images={product.images}
+                          primaryImage={product.image}
+                          productName={product.name}
+                          onError={(event) => {
+                            event.currentTarget.src = '/images/landing/neon.png';
+                          }}
+                        />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
                       </div>
                       <div className="p-3 sm:p-4">
@@ -459,11 +595,7 @@ export default function DressingRoomLandingPage() {
           <RentalFlowModal
             look={selectedLook}
             isOpen={showRentalModal}
-            onClose={() => {
-              setShowRentalModal(false);
-              setSelectedLook(null);
-            }}
-            onConfirm={handleRentalConfirm}
+            onClose={() => setShowRentalModal(false)}
           />
         )}
       </div>

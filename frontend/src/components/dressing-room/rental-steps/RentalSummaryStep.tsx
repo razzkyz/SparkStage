@@ -1,22 +1,22 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, FileText } from 'lucide-react';
+import { Check, FileText, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 import type { RentalFormData } from '../RentalFlowModal';
 import { RentalProductGallery } from '../RentalProductGallery';
+import { invokeSupabaseFunction } from '../../../lib/supabaseFunctionInvoke';
 
 interface RentalSummaryStepProps {
   rentalData: RentalFormData;
   onPrev: () => void;
-  onConfirm: () => void;
 }
 
 export default function RentalSummaryStep({
   rentalData,
   onPrev,
-  onConfirm,
 }: RentalSummaryStepProps) {
   const [agreedToTC, setAgreedToTC] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Calculate costs
   const totalRentalCost = rentalData.look.items.reduce((sum, item) => {
@@ -25,11 +25,59 @@ export default function RentalSummaryStep({
   }, 0);
 
   const totalDeposit = rentalData.look.items.reduce((sum, item) => {
-    const deposit = Math.ceil((item.product_variant?.price || 0) * 0.75);
+    const price = item.product_variant?.price || 0;
+    const deposit = item.product_variant?.deposit_amount || Math.ceil(price * 0.75);
     return sum + deposit;
   }, 0);
 
   const totalAmount = totalRentalCost + totalDeposit;
+
+  const handleConfirm = async () => {
+    setIsProcessing(true);
+    try {
+      const items = rentalData.look.items.map((item) => ({
+        productVariantId: item.product_variant_id,
+        productName: item.product_variant?.name || item.label || 'Unknown',
+        dailyRate: item.product_variant?.price || 0,
+        depositAmount: item.product_variant?.deposit_amount || Math.ceil((item.product_variant?.price || 0) * 0.75),
+        quantity: 1,
+        initialCondition: rentalData.initialCondition?.[item.id],
+      }));
+
+      const data = await invokeSupabaseFunction<{
+        payment_provider: string;
+        payment_url: string;
+        payment_sdk_url: string;
+        payment_due_date: string;
+        order_number: string;
+        order_id: number;
+      }>({
+        functionName: 'create-doku-rental-checkout',
+        body: {
+          items,
+          durationDays: rentalData.durationDays,
+          rentalStartTime: rentalData.rentalStartTime.toISOString(),
+          rentalEndTime: rentalData.rentalEndTime.toISOString(),
+          customerName: rentalData.customerData.fullName,
+          customerEmail: rentalData.customerData.email,
+          customerPhone: rentalData.customerData.phone,
+          customerAddress: rentalData.customerData.address,
+          initialCondition: rentalData.initialCondition,
+        },
+        fallbackMessage: 'Failed to create payment checkout',
+      });
+      
+      // Redirect to DOKU payment page
+      if (data.payment_url) {
+        window.location.href = data.payment_url;
+      }
+    } catch (error) {
+      console.error('Payment checkout error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to create payment checkout');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <motion.div
@@ -96,7 +144,7 @@ export default function RentalSummaryStep({
           <div className="space-y-2">
             {rentalData.look.items.map((item) => {
               const dailyRate = item.product_variant?.price || 0;
-              const deposit = Math.ceil(dailyRate * 0.75);
+              const deposit = item.product_variant?.deposit_amount || Math.ceil(dailyRate * 0.75);
               const totalItemCost = dailyRate * rentalData.durationDays;
 
               return (
@@ -135,12 +183,6 @@ export default function RentalSummaryStep({
             <div>
               <p className="text-gray-600 text-xs">No HP</p>
               <p className="font-semibold text-gray-900">{rentalData.customerData.phone}</p>
-            </div>
-            <div>
-              <p className="text-gray-600 text-xs">Rekening</p>
-              <p className="font-semibold text-gray-900">
-                {rentalData.customerData.bankName} - {rentalData.customerData.bankAccount}
-              </p>
             </div>
           </div>
         </div>
@@ -215,15 +257,22 @@ export default function RentalSummaryStep({
         </button>
         <button
           type="button"
-          onClick={onConfirm}
-          disabled={!agreedToTC}
-          className={`flex-1 px-4 py-3 text-sm font-bold uppercase tracking-wider transition-all ${
+          onClick={handleConfirm}
+          disabled={!agreedToTC || isProcessing}
+          className={`flex-1 px-4 py-3 text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
             agreedToTC
               ? 'bg-green-600 text-white hover:bg-green-700'
               : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
-          ✓ Konfirmasi Sewa
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Memproses...
+            </>
+          ) : (
+            '✓ Konfirmasi Sewa'
+          )}
         </button>
       </div>
     </motion.div>
