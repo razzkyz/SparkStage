@@ -55,6 +55,14 @@ export default function RentalOrders() {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [customerFormData, setCustomerFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+  });
+  const [customerFormErrors, setCustomerFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchOrders();
@@ -93,6 +101,13 @@ export default function RentalOrders() {
 
   const handleOrderClick = (order: RentalOrder) => {
     setSelectedOrder(order);
+    setCustomerFormData({
+      fullName: order.customer_name,
+      email: order.customer_email,
+      phone: order.customer_phone,
+      address: order.customer_address || '',
+    });
+    setIsEditingCustomer(false);
     fetchOrderItems(order.id);
   };
 
@@ -196,6 +211,61 @@ export default function RentalOrders() {
         return 0; // Deposit hangus, handled separately
       default:
         return 0;
+    }
+  };
+
+  const validateCustomerForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!customerFormData.fullName.trim()) newErrors.fullName = 'Nama lengkap wajib diisi';
+    if (!customerFormData.email.trim()) newErrors.email = 'Email wajib diisi';
+    if (!customerFormData.email.includes('@')) newErrors.email = 'Email tidak valid';
+    if (!customerFormData.phone.trim()) newErrors.phone = 'No HP wajib diisi';
+    if (!customerFormData.phone.startsWith('08')) newErrors.phone = 'No HP harus dimulai dengan 08';
+    if (!customerFormData.address.trim()) newErrors.address = 'Alamat wajib diisi';
+
+    setCustomerFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveCustomerInfo = async () => {
+    if (!selectedOrder || !validateCustomerForm()) return;
+
+    try {
+      const { error } = await supabase
+        .from('rental_orders')
+        .update({
+          customer_name: customerFormData.fullName,
+          customer_email: customerFormData.email,
+          customer_phone: customerFormData.phone,
+          customer_address: customerFormData.address,
+        })
+        .eq('id', selectedOrder.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setSelectedOrder({
+        ...selectedOrder,
+        customer_name: customerFormData.fullName,
+        customer_email: customerFormData.email,
+        customer_phone: customerFormData.phone,
+        customer_address: customerFormData.address,
+      });
+
+      setIsEditingCustomer(false);
+      alert('Data customer berhasil diperbarui');
+      fetchOrders();
+    } catch (error) {
+      console.error('Failed to save customer info:', error);
+      alert('Gagal menyimpan data customer');
+    }
+  };
+
+  const handleCustomerFieldChange = (field: string, value: string) => {
+    setCustomerFormData(prev => ({ ...prev, [field]: value }));
+    if (customerFormErrors[field]) {
+      setCustomerFormErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -425,36 +495,153 @@ export default function RentalOrders() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Customer Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <User className="w-4 h-4" />
-                    <span>{selectedOrder.customer_name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="w-4 h-4" />
-                    <span>{selectedOrder.customer_phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail className="w-4 h-4" />
-                    <span>{selectedOrder.customer_email}</span>
-                  </div>
+              {/* Customer Info - with Edit Form */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">👤 Informasi Customer</h3>
+                  <button
+                    onClick={() => setIsEditingCustomer(!isEditingCustomer)}
+                    className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                      isEditingCustomer
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-main-100 text-main-700 hover:bg-main-200'
+                    }`}
+                  >
+                    {isEditingCustomer ? 'Batal Edit' : 'Edit'}
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>Mulai: {new Date(selectedOrder.rental_start_time).toLocaleString('id-ID')}</span>
+
+                {isEditingCustomer ? (
+                  // Edit Form
+                  <div className="space-y-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
+                        Nama Lengkap
+                      </label>
+                      <input
+                        type="text"
+                        value={customerFormData.fullName}
+                        onChange={(e) => handleCustomerFieldChange('fullName', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-all ${
+                          customerFormErrors.fullName
+                            ? 'border-red-300 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-main-500'
+                        }`}
+                      />
+                      {customerFormErrors.fullName && (
+                        <p className="text-xs text-red-600 mt-1">{customerFormErrors.fullName}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={customerFormData.email}
+                        onChange={(e) => handleCustomerFieldChange('email', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-all ${
+                          customerFormErrors.email
+                            ? 'border-red-300 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-main-500'
+                        }`}
+                      />
+                      {customerFormErrors.email && (
+                        <p className="text-xs text-red-600 mt-1">{customerFormErrors.email}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
+                        No HP / WhatsApp
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="62812xxxxx"
+                        value={customerFormData.phone}
+                        onChange={(e) => handleCustomerFieldChange('phone', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-all ${
+                          customerFormErrors.phone
+                            ? 'border-red-300 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-main-500'
+                        }`}
+                      />
+                      {customerFormErrors.phone && (
+                        <p className="text-xs text-red-600 mt-1">{customerFormErrors.phone}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
+                        Alamat Pengiriman
+                      </label>
+                      <textarea
+                        value={customerFormData.address}
+                        onChange={(e) => handleCustomerFieldChange('address', e.target.value)}
+                        rows={3}
+                        className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-all ${
+                          customerFormErrors.address
+                            ? 'border-red-300 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-main-500'
+                        }`}
+                      />
+                      {customerFormErrors.address && (
+                        <p className="text-xs text-red-600 mt-1">{customerFormErrors.address}</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handleSaveCustomerInfo}
+                        className="flex-1 px-3 py-2 bg-main-600 text-white rounded-lg text-sm font-medium hover:bg-main-700 transition-colors"
+                      >
+                        💾 Simpan
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditingCustomer(false);
+                          setCustomerFormErrors({});
+                        }}
+                        className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                      >
+                        Batal
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="w-4 h-4" />
-                    <span>Kembali: {new Date(selectedOrder.rental_end_time).toLocaleString('id-ID')}</span>
+                ) : (
+                  // View Mode
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <User className="w-4 h-4" />
+                        <span>{selectedOrder.customer_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Phone className="w-4 h-4" />
+                        <span>{selectedOrder.customer_phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Mail className="w-4 h-4" />
+                        <span>{selectedOrder.customer_email}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="w-4 h-4" />
+                        <span>Mulai: {new Date(selectedOrder.rental_start_time).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="w-4 h-4" />
+                        <span>Kembali: {new Date(selectedOrder.rental_end_time).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <FileText className="w-4 h-4" />
+                        <span>Durasi: {selectedOrder.duration_days} hari</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <FileText className="w-4 h-4" />
-                    <span>Durasi: {selectedOrder.duration_days} hari</span>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Items */}

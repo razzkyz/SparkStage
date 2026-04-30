@@ -9,6 +9,7 @@ import { useDressingRoomCollection, type DressingRoomLook as DBLook } from '../h
 import { useProductSummaries, type ProductSummary } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/cartStore';
 import { AppLoadingScreen } from '../app/AppLoadingScreen';
 import { formatCurrency } from '../utils/formatters';
 import RentalFlowModal from '../components/dressing-room/RentalFlowModal';
@@ -52,6 +53,7 @@ function productToLook(product: ProductSummary): DBLook {
 
 export default function DressingRoomLandingPage() {
   const { user } = useAuth();
+  const { clear } = useCart();
   const { collection, looks: dbLooks, isLoading: looksLoading } = useDressingRoomCollection();
   const { data: allProducts = [], isLoading: productsLoading } = useProductSummaries();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -596,7 +598,10 @@ export default function DressingRoomLandingPage() {
           <RentalFlowModal
             look={selectedLook}
             isOpen={showRentalModal}
-            onClose={() => setShowRentalModal(false)}
+            onClose={() => {
+              setShowRentalModal(false);
+              clear();
+            }}
           />
         )}
       </div>

@@ -196,28 +196,17 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE public.rental_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rental_order_items ENABLE ROW LEVEL SECURITY;
 
--- Allow admins full access
+-- Allow admins full access using public.is_admin() function
+-- Replaced deprecated auth.users.raw_user_meta_data approach
 CREATE POLICY "Admins can manage rental orders"
   ON public.rental_orders
   FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM auth.users
-      WHERE auth.users.id = auth.uid()
-      AND auth.users.raw_user_meta_data->>'role' = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 CREATE POLICY "Admins can manage rental order items"
   ON public.rental_order_items
   FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM auth.users
-      WHERE auth.users.id = auth.uid()
-      AND auth.users.raw_user_meta_data->>'role' = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Allow users to view their own orders
 CREATE POLICY "Users can view own rental orders"
