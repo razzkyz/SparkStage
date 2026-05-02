@@ -57,7 +57,7 @@ const Navbar = () => {
   const navItems = [
     { key: 'on-stage', label: 'ON STAGE', to: '/on-stage' },
     { key: 'glam', label: 'GLAM', to: '/glam' },
-    { key: 'dressing-room', label: 'FASHION ON DEMAND', to: '/dressing-room' },
+    // { key: 'dressing-room', label: 'FASHION ON DEMAND', to: '/dressing-room' },
     { key: 'charm-bar', label: 'CHARM BAR', to: '/charm-bar' },
     { key: 'shop', label: 'SPARK CLUB', to: '/shop' },
     { key: 'event', label: 'CELEBRATE', to: '/events' },
