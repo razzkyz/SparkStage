@@ -145,7 +145,7 @@ const OnStage = () => {
             slides={heroBanners}
             intervalMs={8000}
             containerClassName="relative h-full w-full"
-            imageClassName="w-full h-full object-contain md:object-contain"
+            imageClassName="w-full h-full object-cover md:object-cover"
             prevButtonClassName="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white p-2 md:p-3 rounded-full ux-transition-color touch-manipulation"
             nextButtonClassName="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white p-2 md:p-3 rounded-full ux-transition-color touch-manipulation"
             indicatorActiveClassName="bg-white"
@@ -233,11 +233,11 @@ const OnStage = () => {
                       className={`block w-full h-full ${!processBanner.link_url ? 'cursor-default pointer-events-none' : ''}`}
                     >
                       {/* Process Image */}
-                      <div className="relative aspect-[16/9] md:aspect-[21/9] w-full bg-gray-100 dark:bg-gray-900">
+                      <div className="relative w-full bg-gray-100 dark:bg-gray-900">
                         {processBanner.image_url?.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
-                          <video src={processBanner.image_url} className="w-full h-full object-cover pointer-events-none" autoPlay loop muted playsInline />
+                          <video src={processBanner.image_url} className="w-full h-auto object-cover pointer-events-none" autoPlay loop muted playsInline />
                         ) : (
-                          <img src={processBanner.image_url} alt={processBanner.title || 'Process visual'} className="w-full h-full object-cover pointer-events-none" />
+                          <img src={processBanner.image_url} alt={processBanner.title || 'Process visual'} className="w-full h-auto object-contain pointer-events-none" />
                         )}
                       </div>
 
