@@ -229,6 +229,24 @@ export async function issueTicketsIfNeeded(params: {
     skipResult: { issued: 0, skipped: true },
     metadataOnComplete: { order_id: order.id, processed_at: nowIso },
     run: async () => {
+      // Ensure we have the user_id - fetch from order if missing
+      let userId = order.user_id
+      if (!userId) {
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .select('user_id')
+          .eq('id', order.id)
+          .single()
+        if (orderError) {
+          throw new Error(`Failed to fetch order user_id: ${orderError.message}`)
+        }
+        userId = (orderData as { user_id?: string | null })?.user_id ?? null
+      }
+
+      if (!userId) {
+        throw new Error(`Cannot issue tickets: order ${order.order_number} has no user_id`)
+      }
+
       const orderItemsResult =
         params.orderItems == null
           ? await supabase
@@ -310,7 +328,7 @@ export async function issueTicketsIfNeeded(params: {
           ticketsToInsert.push({
             ticket_code: generateTicketCode(),
             order_item_id: orderItemId,
-            user_id: order.user_id,
+            user_id: userId,
             ticket_id: item.ticket_id,
             valid_date: selectedDate,
             time_slot: timeSlotForTicket,
