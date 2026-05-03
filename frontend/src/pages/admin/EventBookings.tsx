@@ -4,30 +4,27 @@ import AdminLayout from '../../components/AdminLayout';
 import { ADMIN_MENU_ITEMS, ADMIN_MENU_SECTIONS } from '../../constants/adminMenu';
 import { createClient } from '@supabase/supabase-js';
 
-type EventBookingStatus = 'pending' | 'approved' | 'rejected' | 'scanned';
+type PurchasedTicketStatus = 'active' | 'used' | 'cancelled' | 'expired';
 
-interface EventBooking {
+interface PurchasedTicket {
   id: number;
-  order_number: string;
-  customer_name: string;
-  customer_email: string | null;
-  customer_phone: string | null;
-  selected_date: string;
-  selected_time: string | null;
   ticket_id: number;
   ticket_code: string | null;
-  status: EventBookingStatus;
-  payment_method: string | null;
-  qr_code_file: string | null;
-  scanned_by: string | null;
+  ticket_name: string | null;
+  user_id: string;
+  valid_date: string;
+  time_slot: string | null;
+  queue_number: number | null;
+  status: PurchasedTicketStatus;
+  used_at: string | null;
   created_at: string;
-  updated_at: string | null;
+  order_item_id: number | null;
 }
 
 export default function EventBookings() {
   const { signOut } = useAuth();
-  const [bookings, setBookings] = useState<EventBooking[]>([]);
-  const [selectedBooking, setSelectedBooking] = useState<EventBooking | null>(null);
+  const [bookings, setBookings] = useState<PurchasedTicket[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<PurchasedTicket | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +45,7 @@ export default function EventBookings() {
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
       const { data, error } = await supabase
-        .from('event_bookings')
+        .from('purchased_tickets')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -61,31 +58,31 @@ export default function EventBookings() {
     }
   };
 
-  const getStatusColor = (status: EventBookingStatus) => {
+  const getStatusColor = (status: PurchasedTicketStatus) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
-        return 'bg-blue-100 text-blue-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'scanned':
+      case 'active':
         return 'bg-green-100 text-green-800';
+      case 'used':
+        return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'expired':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusLabel = (status: EventBookingStatus) => {
+  const getStatusLabel = (status: PurchasedTicketStatus) => {
     switch (status) {
-      case 'pending':
-        return 'Pending';
-      case 'approved':
-        return 'Approved';
-      case 'rejected':
-        return 'Rejected';
-      case 'scanned':
-        return 'Scanned';
+      case 'active':
+        return 'Active';
+      case 'used':
+        return 'Used';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'expired':
+        return 'Expired';
       default:
         return status;
     }
@@ -93,17 +90,16 @@ export default function EventBookings() {
 
   const filteredBookings = bookings.filter((booking) => {
     const matchesSearch =
-      booking.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (booking.customer_phone && booking.customer_phone.includes(searchQuery));
+      (booking.ticket_code && booking.ticket_code.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (booking.ticket_name && booking.ticket_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      booking.user_id.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
   const stats = {
     total: bookings.length,
-    pending: bookings.filter(b => b.status === 'pending').length,
-    approved: bookings.filter(b => b.status === 'approved').length,
-    scanned: bookings.filter(b => b.status === 'scanned').length,
+    active: bookings.filter(b => b.status === 'active').length,
+    used: bookings.filter(b => b.status === 'used').length,
   };
 
   if (loading) {
@@ -147,22 +143,18 @@ export default function EventBookings() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500 mb-1">Total Bookings</p>
+            <p className="text-sm text-gray-500 mb-1">Total Tickets</p>
             <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500 mb-1">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+            <p className="text-sm text-gray-500 mb-1">Active</p>
+            <p className="text-2xl font-bold text-green-600">{stats.active}</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500 mb-1">Approved</p>
-            <p className="text-2xl font-bold text-blue-600">{stats.approved}</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-sm text-gray-500 mb-1">Scanned</p>
-            <p className="text-2xl font-bold text-green-600">{stats.scanned}</p>
+            <p className="text-sm text-gray-500 mb-1">Used</p>
+            <p className="text-2xl font-bold text-blue-600">{stats.used}</p>
           </div>
         </div>
 
@@ -170,7 +162,7 @@ export default function EventBookings() {
         <div className="flex flex-col sm:flex-row gap-4">
           <input
             type="text"
-            placeholder="Cari order number, nama, atau phone..."
+            placeholder="Cari ticket code, ticket name, atau user ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-main-500"
@@ -183,13 +175,13 @@ export default function EventBookings() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Order</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tanggal</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Waktu</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Ticket Code</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Ticket Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Valid Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Time Slot</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Queue</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Payment</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Scanned</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Used At</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -200,18 +192,19 @@ export default function EventBookings() {
                     onClick={() => setSelectedBooking(booking)}
                   >
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-gray-900">{booking.order_number}</div>
-                      <div className="text-xs text-gray-500">{new Date(booking.created_at).toLocaleDateString('id-ID')}</div>
+                      <div className="font-semibold text-gray-900">{booking.ticket_code || '-'}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{booking.customer_name}</div>
-                      <div className="text-xs text-gray-500">{booking.customer_phone || '-'}</div>
+                      <div className="font-medium text-gray-900">{booking.ticket_name || '-'}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-gray-900">{new Date(booking.selected_date).toLocaleDateString('id-ID')}</div>
+                      <div className="text-sm text-gray-900">{new Date(booking.valid_date).toLocaleDateString('id-ID')}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-gray-900">{booking.selected_time || 'All Day'}</div>
+                      <div className="text-sm text-gray-900">{booking.time_slot || '-'}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-sm text-gray-900">{booking.queue_number || '-'}</div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>
@@ -219,11 +212,8 @@ export default function EventBookings() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-gray-900">{booking.payment_method || '-'}</div>
-                    </td>
-                    <td className="px-4 py-3">
                       <div className="text-sm text-gray-900">
-                        {booking.scanned_by ? 'Yes' : 'No'}
+                        {booking.used_at ? new Date(booking.used_at).toLocaleString('id-ID') : '-'}
                       </div>
                     </td>
                   </tr>
@@ -254,32 +244,28 @@ export default function EventBookings() {
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-gray-500">Order Number</p>
-                    <p className="font-semibold text-gray-900">{selectedBooking.order_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Customer Name</p>
-                    <p className="font-semibold text-gray-900">{selectedBooking.customer_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-semibold text-gray-900">{selectedBooking.customer_email || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Phone</p>
-                    <p className="font-semibold text-gray-900">{selectedBooking.customer_phone || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Selected Date</p>
-                    <p className="font-semibold text-gray-900">{new Date(selectedBooking.selected_date).toLocaleDateString('id-ID')}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Selected Time</p>
-                    <p className="font-semibold text-gray-900">{selectedBooking.selected_time || 'All Day'}</p>
-                  </div>
-                  <div>
                     <p className="text-sm text-gray-500">Ticket Code</p>
                     <p className="font-semibold text-gray-900">{selectedBooking.ticket_code || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Ticket Name</p>
+                    <p className="font-semibold text-gray-900">{selectedBooking.ticket_name || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">User ID</p>
+                    <p className="font-semibold text-gray-900">{selectedBooking.user_id}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Valid Date</p>
+                    <p className="font-semibold text-gray-900">{new Date(selectedBooking.valid_date).toLocaleDateString('id-ID')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Time Slot</p>
+                    <p className="font-semibold text-gray-900">{selectedBooking.time_slot || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Queue Number</p>
+                    <p className="font-semibold text-gray-900">{selectedBooking.queue_number || '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Status</p>
@@ -288,12 +274,8 @@ export default function EventBookings() {
                     </span>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Payment Method</p>
-                    <p className="font-semibold text-gray-900">{selectedBooking.payment_method || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Scanned By</p>
-                    <p className="font-semibold text-gray-900">{selectedBooking.scanned_by || 'Not scanned yet'}</p>
+                    <p className="text-sm text-gray-500">Used At</p>
+                    <p className="font-semibold text-gray-900">{selectedBooking.used_at ? new Date(selectedBooking.used_at).toLocaleString('id-ID') : 'Not used yet'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Created At</p>
