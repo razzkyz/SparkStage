@@ -16,6 +16,8 @@ export function useQrScannerController({
   closeDelayMs = 2500,
   closeOnError = false,
   closeOnErrorDelayMs = 3000,
+  sequenceNumber,
+  description,
 }: QrScannerModalProps): QrScannerControllerResult {
   const readerId = useMemo(() => `qr-reader-${Date.now()}-${Math.random().toString(16).slice(2)}`, []);
   const qrRef = useRef<Html5Qrcode | null>(null);
@@ -512,5 +514,7 @@ export function useQrScannerController({
     handleManualCodeChange,
     handleManualSubmit,
     handleRetry,
+    sequenceNumber,
+    description,
   };
 }

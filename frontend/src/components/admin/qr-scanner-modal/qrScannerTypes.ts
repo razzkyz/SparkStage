@@ -13,6 +13,8 @@ export type QrScannerModalProps = {
   closeDelayMs?: number;
   closeOnError?: boolean;
   closeOnErrorDelayMs?: number;
+  sequenceNumber?: string;
+  description?: string;
 };
 
 export type QrScannerControllerResult = {
@@ -27,4 +29,6 @@ export type QrScannerControllerResult = {
   handleManualCodeChange: (value: string) => void;
   handleManualSubmit: (event: FormEvent) => Promise<void>;
   handleRetry: () => void;
+  sequenceNumber?: string;
+  description?: string;
 };

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
 import QRScannerModal from '../../components/admin/QRScannerModal';
@@ -16,6 +16,8 @@ export default function ProductOrders() {
   const { showToast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const [scanSequenceNumber, setScanSequenceNumber] = useState<string | undefined>(undefined);
+  const [scanDescription, setScanDescription] = useState<string | undefined>(undefined);
 
   const { data, error, isLoading, isFetching, refetch } = useProductOrders();
   const orders = data?.orders ?? [];
@@ -54,6 +56,19 @@ export default function ProductOrders() {
     handleCloseDetails,
     handleCompletePickup,
   } = controller;
+
+  const handleScanWithDetails = useCallback(
+    async (decodedText: string) => {
+      setScanSequenceNumber(undefined);
+      setScanDescription(undefined);
+      await handleScan(decodedText);
+      if (details) {
+        setScanSequenceNumber(details.order.pickup_code || undefined);
+        setScanDescription(`${details.order.profiles?.name || 'Unknown'} - ${details.items.length} item(s)`);
+      }
+    },
+    [handleScan, details]
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -124,12 +139,14 @@ export default function ProductOrders() {
         isOpen={scannerOpen}
         onClose={() => setScannerOpen(false)}
         title="Scan Pickup QR"
-        onScan={handleScan}
+        onScan={handleScanWithDetails}
         closeOnSuccess={true}
-        closeDelayMs={1000}
+        closeDelayMs={2500}
         closeOnError={true}
-        closeOnErrorDelayMs={1000}
+        closeOnErrorDelayMs={2000}
         autoResumeOnError={false}
+        sequenceNumber={scanSequenceNumber}
+        description={scanDescription}
       />
 
       <ProductOrderDetailsModal

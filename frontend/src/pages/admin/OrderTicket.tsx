@@ -9,6 +9,8 @@ const OrderTicket = () => {
   const { signOut, session } = useAuth();
   const [showScanner, setShowScanner] = useState(false);
   const [validating, setValidating] = useState(false);
+  const [scanSequenceNumber, setScanSequenceNumber] = useState<string | undefined>(undefined);
+  const [scanDescription, setScanDescription] = useState<string | undefined>(undefined);
   const [lastScanResult, setLastScanResult] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -28,12 +30,17 @@ const OrderTicket = () => {
 
       setValidating(true);
       setLastScanResult(null);
+      setScanSequenceNumber(undefined);
+      setScanDescription(undefined);
 
       try {
         const ticket = await validateEntranceTicket({
           ticketCode: code,
           session,
         });
+
+        setScanSequenceNumber(ticket.code);
+        setScanDescription(`${ticket.userName} - ${ticket.ticketName}`);
 
         setLastScanResult({
           type: 'success',
@@ -163,10 +170,12 @@ const OrderTicket = () => {
         onClose={() => setShowScanner(false)}
         title="Pindai Tiket Masuk"
         closeOnSuccess={true}
-        closeDelayMs={600}
+        closeDelayMs={2500}
         closeOnError={true}
         closeOnErrorDelayMs={2000}
         autoResumeAfterMs={2500}
+        sequenceNumber={scanSequenceNumber}
+        description={scanDescription}
         onScan={async (decodedText) => {
           await validateTicket(decodedText);
         }}

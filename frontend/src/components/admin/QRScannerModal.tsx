@@ -4,7 +4,7 @@ import { useQrScannerController } from './qr-scanner-modal/useQrScannerControlle
 import type { QrScannerModalProps } from './qr-scanner-modal/qrScannerTypes';
 
 export default function QRScannerModal(props: QrScannerModalProps) {
-  const { isOpen, title = 'Scan QR Code', closeOnSuccess = false, closeOnError = false } = props;
+  const { isOpen, title = 'Scan QR Code', closeOnSuccess = false, closeOnError = false, sequenceNumber, description } = props;
   const controller = useQrScannerController(props);
 
   if (!isOpen) return null;
@@ -41,6 +41,8 @@ export default function QRScannerModal(props: QrScannerModalProps) {
           closeOnSuccess={closeOnSuccess}
           closeOnError={closeOnError}
           onRetry={controller.handleRetry}
+          sequenceNumber={sequenceNumber}
+          description={description}
         />
 
         <QrScannerManualEntry

@@ -8,6 +8,8 @@ type QrScannerViewportProps = {
   closeOnSuccess: boolean;
   closeOnError: boolean;
   onRetry: () => void;
+  sequenceNumber?: string;
+  description?: string;
 };
 
 export function QrScannerViewport({
@@ -18,9 +20,11 @@ export function QrScannerViewport({
   closeOnSuccess,
   closeOnError,
   onRetry,
+  sequenceNumber,
+  description,
 }: QrScannerViewportProps) {
   return (
-    <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-gray-100">
+    <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-xl bg-gray-100">
       <div id={readerId} className="h-full w-full" />
 
       {status === 'starting' ? (
@@ -56,7 +60,9 @@ export function QrScannerViewport({
           </div>
           <div className="text-center">
             <p className="text-lg font-bold text-green-800">Berhasil!</p>
-            {!closeOnSuccess ? <p className="mt-1 text-sm text-green-700">Siap scan berikutnya...</p> : null}
+            {sequenceNumber && <p className="mt-1 text-sm font-semibold text-green-700">No. Urut: {sequenceNumber}</p>}
+            {description && <p className="mt-1 text-sm text-green-700">{description}</p>}
+            {!closeOnSuccess ? <p className="mt-2 text-sm text-green-600">Siap scan berikutnya...</p> : null}
           </div>
         </div>
       ) : null}
