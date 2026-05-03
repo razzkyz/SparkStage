@@ -43,11 +43,11 @@ export default function News() {
                 <p className="text-sm text-gray-400 mt-4 italic">{settings.section_1_author}</p>
               </div>
               {settings.section_1_image && (
-                <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden">
+                <div className="bg-gray-100 rounded-2xl overflow-hidden">
                   <img 
                     src={settings.section_1_image} 
                     alt={settings.section_1_title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-contain"
                   />
                 </div>
               )}
@@ -60,11 +60,11 @@ export default function News() {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {settings.section_2_image && (
-                <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden order-2 lg:order-1">
+                <div className="bg-gray-100 rounded-2xl overflow-hidden order-2 lg:order-1">
                   <img 
                     src={settings.section_2_image} 
                     alt={settings.section_2_title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-contain"
                   />
                 </div>
               )}
@@ -98,11 +98,11 @@ export default function News() {
               {settings.section_3_products.map((product, index) => (
                 <div key={index} className="bg-gray-50 rounded-2xl p-6">
                   {product.image && (
-                    <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-4">
+                    <div className="bg-gray-100 rounded-xl overflow-hidden mb-4">
                       <img 
                         src={product.image} 
                         alt={product.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-auto object-contain"
                       />
                     </div>
                   )}

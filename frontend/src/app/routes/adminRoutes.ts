@@ -21,6 +21,7 @@ const EntranceBookingManager = lazy(() => import('../../pages/admin/EntranceBook
 const DressingRoomManager = lazy(() => import('../../pages/admin/DressingRoomManager'));
 const RentalOrders = lazy(() => import('../../pages/admin/RentalOrders'));
 const BeautyPosterManager = lazy(() => import('../../pages/admin/BeautyPosterManager'));
+const EventBookings = lazy(() => import('../../pages/admin/EventBookings'));
 
 export const adminRouteConfigs: AppRouteConfig[] = [
   { path: '/admin/dashboard', Page: Dashboard },
@@ -42,4 +43,5 @@ export const adminRouteConfigs: AppRouteConfig[] = [
   { path: '/admin/dressing-room', Page: DressingRoomManager },
   { path: '/admin/rental-orders', Page: RentalOrders },
   { path: '/admin/glam-page', Page: BeautyPosterManager },
+  { path: '/admin/event-bookings', Page: EventBookings },
 ];
