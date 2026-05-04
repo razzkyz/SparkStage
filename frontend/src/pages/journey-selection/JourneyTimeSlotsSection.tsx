@@ -110,12 +110,12 @@ export function JourneyTimeSlotsSection({
                           </span>
 
                           {!slot.isPast && minutesLeft !== null && (
-                            <span className="hidden md:block absolute -top-2 -right-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
+                            <span className={`hidden md:block absolute -top-2 -right-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
                               ${urgency === 'high' ? 'bg-red-500 text-white animate-pulse' : ''}
                               ${urgency === 'medium' ? 'bg-orange-500 text-white' : ''}
                               ${urgency === 'low' ? 'bg-yellow-500 text-black' : ''}
                               ${urgency === 'none' ? 'bg-green-500 text-white' : ''}
-                            ">
+                            `}>
                               {Math.floor(minutesLeft / 60)}:{(minutesLeft % 60).toString().padStart(2, '0')}
                             </span>
                           )}
