@@ -191,12 +191,12 @@ const OnStage = () => {
       {processBanners.length > 0 && (
         <section className="w-full relative overflow-hidden bg-white mb-8 border-t border-b border-gray-100 pb-6 shadow-sm">
           {/* Title Image Overflow (Only shown for current active slide) */}
-          <div className="flex justify-center mb-6 h-48 md:h-64 xl:h-96 transition-all duration-500 text-center relative z-20 mt-4 px-4">
+          <div className="flex justify-center mb-6 h-32 md:h-40 lg:h-48 transition-all duration-500 text-center relative z-20 mt-4 px-4">
             {processBanners[currentProcessSlide]?.title_image_url ? (
               <img 
                 src={processBanners[currentProcessSlide].title_image_url!} 
                 alt={processBanners[currentProcessSlide].title || 'Process Title Typography'} 
-                className="h-full object-contain animate-fade-in drop-shadow-md"
+                className="h-full w-auto object-contain animate-fade-in drop-shadow-md"
               />
             ) : processBanners[currentProcessSlide]?.title ? (
               <h2 className="text-4xl md:text-6xl font-bold tracking-widest text-[#ff4b86] self-center animate-fade-in uppercase pt-4">
