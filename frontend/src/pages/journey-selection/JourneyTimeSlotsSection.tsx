@@ -70,7 +70,7 @@ export function JourneyTimeSlotsSection({
       {hasBookableDates && availableSlotsCount > 0 ? (
         <div className="space-y-4 md:space-y-6">
           {isAllDayTicket ? (
-            <p className="text-xs md:text-xs font-black uppercase tracking-widest text-main-600/70">
+            <p className="text-xs md:text-sm font-black uppercase tracking-widest text-main-600/70">
               {copy.choose_specific_time_label}
             </p>
           ) : null}
@@ -80,7 +80,7 @@ export function JourneyTimeSlotsSection({
             return (
               <div key={period}>
                 <div className="mb-3 md:mb-4">
-                  <p className="text-xs md:text-xs font-bold uppercase tracking-widest text-gray-400">
+                  <p className="text-xs md:text-sm font-bold uppercase tracking-widest text-gray-400">
                     {PERIOD_NAMES[period] || period}
                   </p>
                 </div>
@@ -95,7 +95,7 @@ export function JourneyTimeSlotsSection({
                         <button
                           onClick={() => !slot.isPast && onSelectTime(slot.time)}
                           disabled={slot.isPast}
-                          className={`px-4 md:px-6 py-2 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-all relative
+                          className={`px-4 md:px-6 py-2 md:py-3 rounded-lg text-sm md:text-base font-medium transition-all relative
                             ${slot.isPast
                               ? 'opacity-40 cursor-not-allowed bg-gray-200 border border-gray-300 line-through'
                               : isSelected
@@ -105,7 +105,7 @@ export function JourneyTimeSlotsSection({
                           `}
                         >
                           {slot.time.substring(0, 5)}
-                          <span className="text-xs md:text-xs ml-1 md:ml-2 opacity-60">
+                          <span className="text-xs md:text-sm ml-1 md:ml-2 opacity-60">
                             {slot.isPast ? '(Ended)' : `(${slot.available} left)`}
                           </span>
 
