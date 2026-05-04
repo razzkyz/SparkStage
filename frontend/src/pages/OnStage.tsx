@@ -130,13 +130,13 @@ const OnStage = () => {
   return (
     <div className="bg-white min-h-screen">
       {/* Hero Section with Slider */}
-      <section className="relative w-full h-[600px] overflow-hidden bg-black">
+      <section className="relative w-full h-[50vh] md:h-[600px] overflow-hidden bg-black">
         {heroBanners.length > 0 ? (
           <HeroBannerCarousel
             slides={heroBanners}
             intervalMs={8000}
             containerClassName="relative h-full w-full"
-            imageClassName="w-full h-full object-cover md:object-cover object-center"
+            imageClassName="w-full h-full object-cover md:object-cover object-top md:object-center"
             prevButtonClassName="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white p-2 md:p-3 rounded-full ux-transition-color touch-manipulation"
             nextButtonClassName="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white p-2 md:p-3 rounded-full ux-transition-color touch-manipulation"
             indicatorActiveClassName="bg-white"
