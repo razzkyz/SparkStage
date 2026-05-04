@@ -130,13 +130,13 @@ const OnStage = () => {
   return (
     <div className="bg-white min-h-screen">
       {/* Hero Section with Slider */}
-      <section className="relative w-full h-screen max-h-[800px] overflow-hidden bg-gray-900">
+      <section className="relative w-full h-[600px] overflow-hidden bg-black">
         {heroBanners.length > 0 ? (
           <HeroBannerCarousel
             slides={heroBanners}
             intervalMs={8000}
             containerClassName="relative h-full w-full"
-            imageClassName="w-full h-full object-cover md:object-cover"
+            imageClassName="w-full h-full object-cover md:object-cover object-center"
             prevButtonClassName="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white p-2 md:p-3 rounded-full ux-transition-color touch-manipulation"
             nextButtonClassName="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white p-2 md:p-3 rounded-full ux-transition-color touch-manipulation"
             indicatorActiveClassName="bg-white"
@@ -167,7 +167,7 @@ const OnStage = () => {
         <div className="flex justify-center px-4">
           <a
             href="#select-journey"
-            className="inline-block transition-transform hover:-translate-y-1 hover:drop-shadow-2xl active:translate-y-0 active:drop-shadow-lg duration-300"
+            className="inline-block transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:drop-shadow-2xl active:scale-100 active:translate-y-0 active:drop-shadow-lg"
           >
             <img 
               src="/images/landing/TICKET BOARD ENTRANCE website.png"
@@ -224,11 +224,11 @@ const OnStage = () => {
                       className={`block w-full h-full ${!processBanner.link_url ? 'cursor-default pointer-events-none' : ''}`}
                     >
                       {/* Process Image */}
-                      <div className="relative w-full bg-gray-100 dark:bg-gray-900">
+                      <div className="relative w-full bg-gray-100 dark:bg-gray-900 group overflow-hidden">
                         {processBanner.image_url?.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
-                          <video src={processBanner.image_url} className="w-full h-auto object-cover pointer-events-none" autoPlay loop muted playsInline />
+                          <video src={processBanner.image_url} className="w-full h-auto object-cover pointer-events-none transition-transform duration-500 group-hover:scale-105" autoPlay loop muted playsInline />
                         ) : (
-                          <img src={processBanner.image_url} alt={processBanner.title || 'Process visual'} className="w-full h-auto object-contain pointer-events-none" />
+                          <img src={processBanner.image_url} alt={processBanner.title || 'Process visual'} className="w-full h-auto object-contain pointer-events-none transition-transform duration-500 group-hover:scale-105" />
                         )}
                       </div>
 
@@ -342,12 +342,12 @@ const OnStage = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-main-600" />
                 </div>
               ) : sparkMap ? (
-                <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 lg:p-8">
+                <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 lg:p-8 group">
                   <h3 className="text-2xl font-black mb-5 italic">{sparkMap.title || 'Spark Map'}</h3>
                   {sparkMap.image_url?.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
                     <video
                       src={sparkMap.image_url}
-                      className="w-full rounded-lg object-contain"
+                      className="w-full rounded-lg object-contain transition-transform duration-500 group-hover:scale-105"
                       autoPlay
                       loop
                       muted
@@ -357,7 +357,7 @@ const OnStage = () => {
                     <img
                       src={sparkMap.image_url}
                       alt={sparkMap.title || 'Spark Stage 55 Map'}
-                      className="w-full rounded-lg object-contain"
+                      className="w-full rounded-lg object-contain transition-transform duration-500 group-hover:scale-105"
                     />
                   )}
                 </div>

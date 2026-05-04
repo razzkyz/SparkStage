@@ -70,7 +70,7 @@ export const HeroBannerCarousel = memo(function HeroBannerCarousel({
         {slides.map((slide, slideIndex) => (
           <div
             key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-700 ${slideIndex === index ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 transition-all duration-1000 ease-out ${slideIndex === index ? 'opacity-100 scale-100 translate-x-0' : 'opacity-0 scale-105 translate-x-4'}`}
           >
             {slide.image_url?.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
               <video 
@@ -82,7 +82,12 @@ export const HeroBannerCarousel = memo(function HeroBannerCarousel({
                 playsInline 
               />
             ) : (
-              <img src={slide.image_url} alt={slide.title} className={imageClassName} />
+              <img 
+                src={slide.image_url} 
+                alt={slide.title} 
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
             )}
             {renderOverlay ? <div className={overlayClassName}>{renderOverlay(slide)}</div> : null}
           </div>
