@@ -99,7 +99,7 @@ const OnStage = () => {
     if (processBanners.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentProcessSlide((p) => (p + 1) % processBanners.length);
-    }, 5000); // 5 seconds auto-slide. You can change the '5000' here to any milliseconds you want.
+    }, 5000);
     return () => clearInterval(interval);
   }, [processBanners.length]);
 
@@ -130,7 +130,7 @@ const OnStage = () => {
   return (
     <div className="bg-white min-h-screen">
       {/* Hero Section with Slider */}
-      <section className="relative w-full overflow-hidden bg-gray-900">
+      <section className="relative w-full h-screen max-h-[800px] overflow-hidden bg-gray-900">
         {heroBanners.length > 0 ? (
           <HeroBannerCarousel
             slides={heroBanners}
