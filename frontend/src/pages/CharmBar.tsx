@@ -15,6 +15,7 @@ import { useShopFilters } from './shop/useShopFilters';
 import { queryKeys } from '../lib/queryKeys';
 import { fetchProductDetail } from '../hooks/useProduct';
 import { AppLoadingScreen } from '../app/AppLoadingScreen';
+import { useCharmBarSettings } from '../hooks/useCharmBarSettings';
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -167,8 +168,8 @@ export default function CharmBar() {
   const { addItem } = useCart();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { settings: charmBarSettings } = useCharmBarSettings();
   const productsRef = useRef<HTMLDivElement>(null);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const loading = (productsLoading || categoriesLoading) && products.length === 0;
 
@@ -182,14 +183,6 @@ export default function CharmBar() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
-
-  // Image rotation animation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveImageIndex((prev) => (prev + 1) % 3);
-    }, 1500);
-    return () => clearInterval(interval);
   }, []);
 
   const categoryIndex = useMemo(
@@ -293,7 +286,7 @@ export default function CharmBar() {
           <div className="mx-auto max-w-[1680px]">
             <div className="relative bg-[linear-gradient(180deg,#efe6e4_0%,#f4eeeb_100%)]">
               <img
-                src={`${CHARM_BAR_ASSET_BASE}/43620168072.png`}
+                src={charmBarSettings?.hero_image_url || `${CHARM_BAR_ASSET_BASE}/43620168072.png`}
                 alt="Charm bar hero"
                 className="aspect-[16/8.6] w-full object-cover object-center"
               />
@@ -318,12 +311,13 @@ export default function CharmBar() {
                 <ChevronLeft className="w-5 h-5 text-gray-700" />
               </button>
               
-              <div 
+              <div
                 id="category-grid-container"
                 className="flex gap-4 overflow-x-auto hide-scrollbar px-12 py-4 scroll-smooth"
               >
-                {CHARM_BAR_CATEGORIES.filter(cat => cat.isActive).map((category) => {
+                {CHARM_BAR_CATEGORIES.filter(cat => cat.isActive).map((category, index) => {
                   const isActive = activeCategory === category.slug;
+                  const categoryImage = charmBarSettings?.category_images[index] || category.image;
                   return (
                     <button
                       key={category.slug}
@@ -342,19 +336,11 @@ export default function CharmBar() {
                           ? 'border-[#ff4b86] shadow-lg scale-105'
                           : 'border-gray-200 hover:border-[#ff4b86] hover:scale-105'
                       }`}>
-                        {category.images.map((img: string, idx: number) => {
-                          const isActive = idx === (activeImageIndex % category.images.length);
-                          return (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt={`${category.name} ${idx + 1}`}
-                              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out group-hover:scale-110 ${
-                                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                              }`}
-                            />
-                          );
-                        })}
+                        <img
+                          src={categoryImage}
+                          alt={category.name}
+                          className="absolute inset-0 w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
+                        />
                         {isActive && (
                           <div className="absolute inset-0 bg-[#ff4b86]/20 flex items-center justify-center">
                             <div className="bg-[#ff4b86] text-white px-3 py-1 rounded-full text-xs font-semibold">

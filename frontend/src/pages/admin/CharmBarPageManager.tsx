@@ -25,6 +25,7 @@ function createCharmBarDraft(source?: CharmBarPageSettings | null): CharmBarPage
 
   return {
     hero_image_url: next.hero_image_url || '',
+    category_images: next.category_images || [],
     quick_links: next.quick_links || [],
     customize_title: next.customize_title || '',
     steps: next.steps || [],
@@ -101,6 +102,7 @@ export default function CharmBarPageManager() {
 
     const payload: Partial<CharmBarPageSettings> = {
       hero_image_url: draft.hero_image_url,
+      category_images: draft.category_images,
       quick_links: draft.quick_links,
       customize_title: draft.customize_title,
       steps: draft.steps,
@@ -192,6 +194,48 @@ export default function CharmBarPageManager() {
               uploadLabel="Upload image"
               placeholder="Or paste a direct image URL"
             />
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="border-b border-gray-100 pb-3">
+            <h2 className="text-xl font-semibold text-gray-900">Category Images</h2>
+            <p className="mt-1 text-sm text-gray-500">12 category images shown in the Charm Bar page (no animation loop).</p>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <div key={index} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-gray-500">
+                  Category {index + 1}
+                </label>
+                <CmsAssetField
+                  label={`Image ${index + 1}`}
+                  value={draft.category_images[index] || ''}
+                  kind="image"
+                  onChange={(value) => {
+                    const newImages = [...draft.category_images];
+                    newImages[index] = value;
+                    updateDraft({ category_images: newImages });
+                  }}
+                  onUpload={(file) =>
+                    void handleUploadAsset(
+                      file,
+                      (url) => {
+                        const newImages = [...draft.category_images];
+                        newImages[index] = url;
+                        updateDraft({ category_images: newImages });
+                      },
+                      `charm-bar-category-${index + 1}`,
+                      'image'
+                    )
+                  }
+                  previewClassName="h-24 w-full rounded-lg border border-gray-200 bg-white object-cover"
+                  uploadLabel="Upload"
+                  placeholder="Or paste image URL"
+                />
+              </div>
+            ))}
           </div>
         </section>
 

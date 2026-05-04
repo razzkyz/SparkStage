@@ -34,6 +34,7 @@ export interface CharmBarVideoCard {
 export interface CharmBarPageSettings {
   id: string;
   hero_image_url: string;
+  category_images: string[];
   quick_links: CharmBarQuickLink[];
   customize_title: string;
   steps: CharmBarStep[];
@@ -52,6 +53,20 @@ export interface CharmBarPageSettings {
 export const DEFAULT_CHARM_BAR_PAGE_SETTINGS: CharmBarPageSettings = {
   id: 'default-charm-bar-page-settings',
   hero_image_url: `${CHARM_BAR_ASSET_BASE}/43620168072.png`,
+  category_images: [
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%201.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%202.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%203.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%203.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%201.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%202.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%203.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%201.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%202.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%203.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%201.png`,
+    `${CHARM_BAR_ASSET_BASE}/CHARM%20VISUAL%202.png`,
+  ],
   quick_links: [
     {
       title: 'ITALIAN BRACELET',
@@ -296,12 +311,17 @@ function normalizeStepsText(value: unknown): string[] {
 }
 
 function normalizeSettings(data: Record<string, unknown>): CharmBarPageSettings {
+  const categoryImages = Array.isArray(data.category_images)
+    ? data.category_images.filter((u): u is string => typeof u === 'string').filter(u => u.trim() !== '').slice(0, 12)
+    : DEFAULT_CHARM_BAR_PAGE_SETTINGS.category_images;
+
   return {
     id: typeof data.id === 'string' ? data.id : DEFAULT_CHARM_BAR_PAGE_SETTINGS.id,
     hero_image_url:
       typeof data.hero_image_url === 'string' && data.hero_image_url.trim() !== ''
         ? data.hero_image_url
         : DEFAULT_CHARM_BAR_PAGE_SETTINGS.hero_image_url,
+    category_images: categoryImages.length > 0 ? categoryImages : DEFAULT_CHARM_BAR_PAGE_SETTINGS.category_images,
     quick_links: normalizeQuickLinks(data.quick_links),
     customize_title:
       typeof data.customize_title === 'string' && data.customize_title.trim() !== ''
