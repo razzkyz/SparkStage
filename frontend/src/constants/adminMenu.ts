@@ -59,6 +59,7 @@ export const ADMIN_MENU_SECTIONS: AdminMenuSection[] = [
       { id: 'stages', label: 'Kelola Stage', icon: 'grid_view', path: '/admin/stages' },
       { id: 'qr-bulk', label: 'Kelola QR Massal', icon: 'qr_code_2', path: '/admin/qr-bulk' },
       { id: 'stage-analytics', label: 'Analitik Stage', icon: 'analytics', path: '/admin/stage-analytics' },
+      { id: 'sales-report', label: 'Laporan Penjualan', icon: 'bar_chart_4_bars', path: '/admin/sales-report' },
       { id: 'banner-manager', label: 'Kelola Banner', icon: 'image', path: '/admin/banner-manager' },
       { id: 'event-page', label: 'Event Page Config', icon: 'edit_document', path: '/admin/event-page' },
       { id: 'news-page', label: 'News Page Config', icon: 'article', path: '/admin/news-page' },

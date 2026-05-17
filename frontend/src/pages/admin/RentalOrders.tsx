@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Calendar, Clock, User, Phone, Mail, ArrowRight, FileText, RefreshCw } from 'lucide-react';
+import { Search, Calendar, Clock, User, Phone, Mail, ArrowRight, FileText, RefreshCw, ShoppingBag } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency } from '../../utils/formatters';
 import AdminLayout from '../../components/AdminLayout';
@@ -9,6 +9,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAdminMenuSections } from '../../hooks/useAdminMenuSections';
 
 type RentalOrderStatus = 'awaiting_payment' | 'paid' | 'active' | 'overdue' | 'returned' | 'cancelled' | 'refunded';
+type PageTab = 'sewa_formal' | 'costume_harian';
+type CostumeReturnStatus = 'in_laundry' | 'returned' | null;
 
 interface RentalOrder {
   id: number;
@@ -46,9 +48,38 @@ interface RentalOrderItem {
   return_condition: Record<string, unknown>;
 }
 
+interface DressingRoomOrderItem {
+  id: number;
+  quantity: number;
+  price: number;
+  subtotal: number;
+  product_variant_id: number;
+  product_variants: {
+    name?: string;
+    products?: { name?: string; categories?: { name?: string } | null } | null;
+  } | null;
+}
+
+interface DressingRoomOrder {
+  id: number;
+  order_number: string;
+  pickup_code: string | null;
+  pickup_status: string | null;
+  costume_return_status: CostumeReturnStatus;
+  paid_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  total: number;
+  profiles: { name?: string; email?: string } | null;
+  order_product_items: DressingRoomOrderItem[];
+}
+
 export default function RentalOrders() {
   const { signOut } = useAuth();
   const menuSections = useAdminMenuSections();
+  // Page-level tab
+  const [activePageTab, setActivePageTab] = useState<PageTab>('sewa_formal');
+  // Sewa Formal state
   const [orders, setOrders] = useState<RentalOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<RentalOrder | null>(null);
   const [orderItems, setOrderItems] = useState<RentalOrderItem[]>([]);
@@ -65,10 +96,18 @@ export default function RentalOrders() {
     address: '',
   });
   const [customerFormErrors, setCustomerFormErrors] = useState<Record<string, string>>({});
+  // Costume Harian state
+  const [dressingRoomOrders, setDressingRoomOrders] = useState<DressingRoomOrder[]>([]);
+  const [dressingRoomLoading, setDressingRoomLoading] = useState(false);
+  const [costumeActionLoading, setCostumeActionLoading] = useState<number | null>(null);
 
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  useEffect(() => {
+    if (activePageTab === 'costume_harian') fetchDressingRoomOrders();
+  }, [activePageTab]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -76,6 +115,7 @@ export default function RentalOrders() {
       const { data, error } = await supabase
         .from('rental_orders')
         .select('*')
+        .eq('source', 'formal')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -186,6 +226,80 @@ export default function RentalOrders() {
     } catch (error) {
       console.error('Failed to process refund:', error);
       alert('Gagal memproses refund');
+    }
+  };
+
+  // ── Costume Harian handlers ──────────────────────────────────────────────
+
+  const fetchDressingRoomOrders = useCallback(async () => {
+    setDressingRoomLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('order_products')
+        .select(`
+          id, order_number, pickup_code, pickup_status, costume_return_status,
+          paid_at, created_at, updated_at, total,
+          profiles(name, email),
+          order_product_items(
+            id, quantity, price, subtotal, product_variant_id,
+            product_variants(name, products(name, categories(name)))
+          )
+        `)
+        .eq('pickup_status', 'completed')
+        .order('updated_at', { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+
+      // Keep only orders that have at least one dressing-room-category item
+      const filtered = (data || []).filter((order: any) =>
+        (order.order_product_items || []).some((item: any) =>
+          (item.product_variants?.products?.categories?.name || '')
+            .toLowerCase()
+            .includes('dressing')
+        )
+      );
+      setDressingRoomOrders(filtered as DressingRoomOrder[]);
+    } catch (err) {
+      console.error('Failed to fetch dressing room orders:', err);
+    } finally {
+      setDressingRoomLoading(false);
+    }
+  }, []);
+
+  const handleSendLaundry = async (orderId: number) => {
+    setCostumeActionLoading(orderId);
+    try {
+      const { error } = await supabase
+        .from('order_products')
+        .update({ costume_return_status: 'in_laundry' })
+        .eq('id', orderId);
+      if (error) throw error;
+      setDressingRoomOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, costume_return_status: 'in_laundry' } : o))
+      );
+    } catch (err) {
+      console.error('Failed to send to laundry:', err);
+      alert('Gagal mengupdate status laundry');
+    } finally {
+      setCostumeActionLoading(null);
+    }
+  };
+
+  const handleReturnStock = async (orderId: number) => {
+    if (!window.confirm('Konfirmasi pengembalian stok costume? Stok akan ditambahkan kembali sesuai jumlah item order ini.')) return;
+    setCostumeActionLoading(orderId);
+    try {
+      const { error } = await supabase.rpc('admin_return_costume_stock', { p_order_id: orderId });
+      if (error) throw error;
+      setDressingRoomOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, costume_return_status: 'returned' } : o))
+      );
+    } catch (err) {
+      console.error('Failed to return stock:', err);
+      alert('Gagal mengembalikan stok. Periksa console untuk detail.');
+    } finally {
+      setCostumeActionLoading(null);
     }
   };
 
@@ -347,6 +461,36 @@ export default function RentalOrders() {
       onLogout={signOut}
     >
       <div className="space-y-6">
+
+      {/* ── Page-level Tab Switcher ── */}
+      <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setActivePageTab('sewa_formal')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            activePageTab === 'sewa_formal'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          Sewa Formal
+        </button>
+        <button
+          onClick={() => setActivePageTab('costume_harian')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+            activePageTab === 'costume_harian'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          Costume Harian
+        </button>
+      </div>
+
+      {/* ══ SEWA FORMAL TAB ══ */}
+      {activePageTab === 'sewa_formal' && (<>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -779,6 +923,20 @@ export default function RentalOrders() {
           onSubmit={handleRefund}
         />
       )}
+      </> )/* end sewa_formal */}
+
+      {/* ══ COSTUME HARIAN TAB ══ */}
+      {activePageTab === 'costume_harian' && (
+        <CostumeHarianSection
+          orders={dressingRoomOrders}
+          loading={dressingRoomLoading}
+          actionLoading={costumeActionLoading}
+          onRefresh={fetchDressingRoomOrders}
+          onSendLaundry={handleSendLaundry}
+          onReturnStock={handleReturnStock}
+        />
+      )}
+
       </div>
     </AdminLayout>
   );
@@ -941,3 +1099,202 @@ function RefundModal({
     </motion.div>
   );
 }
+
+// ─── Costume Harian Section ──────────────────────────────────────────────────
+
+type CostumeHarianSectionProps = {
+  orders: DressingRoomOrder[];
+  loading: boolean;
+  actionLoading: number | null;
+  onRefresh: () => void;
+  onSendLaundry: (id: number) => void;
+  onReturnStock: (id: number) => void;
+};
+
+function CostumeHarianSection({
+  orders,
+  loading,
+  actionLoading,
+  onRefresh,
+  onSendLaundry,
+  onReturnStock,
+}: CostumeHarianSectionProps) {
+  const [filter, setFilter] = useState<'all' | 'in_laundry' | 'returned' | 'pending'>('all');
+
+  const filtered = orders.filter((o) => {
+    if (filter === 'pending') return !o.costume_return_status;
+    if (filter === 'in_laundry') return o.costume_return_status === 'in_laundry';
+    if (filter === 'returned') return o.costume_return_status === 'returned';
+    return true;
+  });
+
+  const pendingCount = orders.filter((o) => !o.costume_return_status).length;
+  const laundryCount = orders.filter((o) => o.costume_return_status === 'in_laundry').length;
+  const returnedCount = orders.filter((o) => o.costume_return_status === 'returned').length;
+
+  const getStatusChip = (status: DressingRoomOrder['costume_return_status']) => {
+    if (!status) return { label: 'Selesai Sesi', cls: 'bg-yellow-100 text-yellow-800' };
+    if (status === 'in_laundry') return { label: '🧺 Sedang Laundry', cls: 'bg-blue-100 text-blue-800' };
+    return { label: '✅ Stok Dikembalikan', cls: 'bg-green-100 text-green-800' };
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Costume Harian</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Kelola pengembalian dan laundry costume dressing room per sesi
+          </p>
+        </div>
+        <button
+          onClick={onRefresh}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 bg-main-600 text-white rounded-lg hover:bg-main-700 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Info banner */}
+      <div className="bg-pink-50 border border-pink-200 rounded-lg p-4 text-sm text-pink-800">
+        <p className="font-semibold mb-1">📋 Alur Pengembalian Costume Harian</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-1">
+          <span>1️⃣ Customer selesai sesi → pickup <strong>completed</strong></span>
+          <span>2️⃣ Admin kirim ke laundry → klik <strong>Kirim Laundry</strong></span>
+          <span>3️⃣ Costume bersih, cek fisik → klik <strong>Pengembalian Stok</strong> (stok otomatis +1)</span>
+        </div>
+      </div>
+
+      {/* Summary badges */}
+      <div className="flex gap-3 flex-wrap">
+        {[
+          { key: 'all', label: `Semua (${orders.length})` },
+          { key: 'pending', label: `⏳ Belum Laundry (${pendingCount})` },
+          { key: 'in_laundry', label: `🧺 Laundry (${laundryCount})` },
+          { key: 'returned', label: `✅ Dikembalikan (${returnedCount})` },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key as typeof filter)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+              filter === key
+                ? 'bg-main-600 text-white border-main-600'
+                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Orders list */}
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <ShoppingBag className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <p className="font-medium">Tidak ada data costume harian</p>
+          <p className="text-xs mt-1">
+            {filter !== 'all' ? 'Coba ubah filter di atas' : 'Belum ada pesanan costume yang selesai sesi'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((order) => {
+            const chip = getStatusChip(order.costume_return_status);
+            const isLoading = actionLoading === order.id;
+
+            return (
+              <div
+                key={order.id}
+                className="bg-white border border-gray-200 rounded-xl p-4 space-y-3 shadow-sm"
+              >
+                {/* Order header */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-900 text-sm">{order.order_number}</p>
+                    <p className="text-xs text-gray-500">
+                      {order.profiles?.name ?? order.profiles?.email ?? 'Customer'}
+                    </p>
+                    {order.paid_at && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Sesi: {new Date(order.paid_at).toLocaleString('id-ID')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${chip.cls}`}>
+                      {chip.label}
+                    </span>
+                    <span className="text-sm font-bold text-gray-900">
+                      {formatCurrency(Number(order.total))}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Items */}
+                <div className="pl-2 border-l-2 border-gray-100 space-y-1">
+                  {order.order_product_items.map((item) => {
+                    const productName = item.product_variants?.products?.name ?? 'Product';
+                    const variantName = item.product_variants?.name ?? '';
+                    return (
+                      <div key={item.id} className="flex justify-between text-xs text-gray-600">
+                        <span>
+                          <span className="font-medium text-gray-800">{productName}</span>
+                          {variantName && <span className="text-gray-400"> · {variantName}</span>}
+                        </span>
+                        <span>{item.quantity}×</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Action buttons */}
+                {order.costume_return_status !== 'returned' && (
+                  <div className="flex gap-2 pt-1">
+                    {!order.costume_return_status && (
+                      <button
+                        onClick={() => onSendLaundry(order.id)}
+                        disabled={isLoading}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <span>🧺</span>
+                        )}
+                        Kirim Laundry
+                      </button>
+                    )}
+                    {order.costume_return_status === 'in_laundry' && (
+                      <button
+                        onClick={() => onReturnStock(order.id)}
+                        disabled={isLoading}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <span>✅</span>
+                        )}
+                        Pengembalian Stok
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+

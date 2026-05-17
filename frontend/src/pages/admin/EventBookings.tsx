@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import AdminLayout from '../../components/AdminLayout';
 import { ADMIN_MENU_ITEMS } from '../../constants/adminMenu';
 import { useAdminMenuSections } from '../../hooks/useAdminMenuSections';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 
 type PurchasedTicketStatus = 'active' | 'used' | 'cancelled' | 'expired';
@@ -47,15 +47,6 @@ export default function EventBookings() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Missing Supabase configuration');
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
       const { data, error } = await supabase
         .from('purchased_tickets')
         .select('*')
@@ -145,15 +136,6 @@ export default function EventBookings() {
 
     setRescheduling(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Missing Supabase configuration');
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
       console.log('Rescheduling ticket:', rescheduleBooking.id, 'to time_slot:', newTimeSlot);
 
       const { error } = await supabase

@@ -96,7 +96,7 @@ BEGIN
     VALUES (
       v_order.user_id,
       v_points_award,
-      'Backfill: Product/rental purchase reward (' || v_order.total_qty || ' item) - ' || op.order_number,
+      'Backfill: Product/rental purchase reward (' || v_order.total_qty || ' item) - ' || v_order.order_number,
       NULL,
       NOW()
     );

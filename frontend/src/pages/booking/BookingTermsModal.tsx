@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import logoImage from '@/logo/logo black spark with tagline.png';
 
 type BookingTermsModalProps = {
   open: boolean;
@@ -168,6 +169,23 @@ export function BookingTermsModal({ open, onClose, onAgree }: BookingTermsModalP
 
         {/* ── Scrollable body ── */}
         <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '20px 24px 8px' }}>
+          {/* Spark logo above terms */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              marginBottom: '18px',
+              opacity: animate ? 1 : 0,
+              transform: animate ? 'translateY(0)' : 'translateY(-8px)',
+              transition: 'opacity 0.3s ease 0.08s, transform 0.35s cubic-bezier(0.22,1,0.36,1) 0.08s',
+            }}
+          >
+            <img
+              src={logoImage}
+              alt="SPARK STAGE"
+              style={{ height: '38px', width: 'auto', display: 'block' }}
+            />
+          </div>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {TERMS.map((term, i) => {
               const delay = ITEM_BASE_DELAY_MS + i * ITEM_STAGGER_MS;

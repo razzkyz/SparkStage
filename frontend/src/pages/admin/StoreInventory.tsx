@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
 import CategoryManager from '../../components/admin/CategoryManager';
 import ProductFormModal, { type CategoryOption } from '../../components/admin/ProductFormModal';
+import { ProductCSVImportModal } from '../../components/admin/ProductCSVImportModal';
 import QRScannerModal from '../../components/admin/QRScannerModal';
 import TableRowSkeleton from '../../components/skeletons/TableRowSkeleton';
 import { useToast } from '../../components/Toast';
@@ -33,6 +34,8 @@ const StoreInventory = () => {
   const [orderCode, setOrderCode] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showCSVImport, setShowCSVImport] = useState(false);
+  const [isImportingCSV, setIsImportingCSV] = useState(false);
 
   const filters = useStoreInventoryFilters({
     pathname: location.pathname,
@@ -117,6 +120,32 @@ const StoreInventory = () => {
     }
   };
 
+  const handleCSVImport = async (products: any[]) => {
+    setIsImportingCSV(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const product of products) {
+      try {
+        await productActions.handleSaveProduct({
+          draft: product,
+          newImages: [],
+          removedImageUrls: [],
+        });
+        successCount++;
+      } catch (error) {
+        failCount++;
+        console.error(`Failed to import ${product.name}:`, error);
+      }
+    }
+
+    setIsImportingCSV(false);
+    showToast(
+      failCount === 0 ? 'success' : 'info',
+      `Import selesai: ${successCount} produk berhasil${failCount > 0 ? `, ${failCount} gagal` : ''}`
+    );
+  };
+
   return (
     <AdminLayout
       menuItems={ADMIN_MENU_ITEMS}
@@ -142,7 +171,14 @@ const StoreInventory = () => {
             <span className="hidden sm:inline">Stock Report</span>
           </button>
           <button
-            onClick={productActions.handleOpenCreate}
+            onClick={() => setShowCSVImport(true)}
+            aria-label="Import CSV"
+            className="flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-bold text-amber-700 shadow-sm transition-colors hover:bg-amber-100 sm:px-4"
+          >
+            <span className="material-symbols-outlined text-[20px]">upload_file</span>
+            <span className="hidden sm:inline">CSV Import</span>
+          </button>
+          <button
             aria-label="Add Product"
             className="flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#ff4b86] px-3 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#ff6a9a] sm:px-4"
           >
@@ -285,6 +321,13 @@ const StoreInventory = () => {
           handleVerify(normalized);
           setShowScanner(false);
         }}
+      />
+
+      <ProductCSVImportModal
+        isOpen={showCSVImport}
+        onClose={() => setShowCSVImport(false)}
+        onImport={handleCSVImport}
+        isImporting={isImportingCSV}
       />
     </AdminLayout>
   );

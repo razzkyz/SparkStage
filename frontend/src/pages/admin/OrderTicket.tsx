@@ -5,6 +5,7 @@ import QRScannerModal from '../../components/admin/QRScannerModal';
 import { ADMIN_MENU_ITEMS } from '../../constants/adminMenu';
 import { useAdminMenuSections } from '../../hooks/useAdminMenuSections';
 import { validateEntranceTicket } from './order-ticket/validateEntranceTicket';
+import { supabase } from '../../lib/supabase';
 
 const OrderTicket = () => {
   const { signOut, session } = useAuth();
@@ -24,6 +25,38 @@ const OrderTicket = () => {
       validDate: string;
     };
   } | null>(null);
+
+  // ── Reset Tiket state ──────────────────────────────────────────────────────
+  const [resetCode, setResetCode] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetResult, setResetResult] = useState<{
+    ok: boolean;
+    message: string;
+    ticketCode?: string;
+    ticketName?: string;
+    validDate?: string;
+    usedAt?: string;
+  } | null>(null);
+
+  const handleResetTicket = useCallback(async () => {
+    const code = resetCode.trim().toUpperCase();
+    if (!code) return;
+    setResetLoading(true);
+    setResetResult(null);
+    try {
+      const { data, error } = await supabase.rpc('admin_reset_ticket_scan', {
+        p_ticket_code: code,
+      });
+      if (error) throw error;
+      const result = data as { ok: boolean; message: string; ticketCode?: string; ticketName?: string; validDate?: string; usedAt?: string };
+      setResetResult(result);
+      if (result.ok) setResetCode('');
+    } catch (err) {
+      setResetResult({ ok: false, message: err instanceof Error ? err.message : 'Gagal mereset tiket' });
+    } finally {
+      setResetLoading(false);
+    }
+  }, [resetCode]);
 
   const validateTicket = useCallback(
     async (rawCode: string): Promise<void> => {
@@ -232,8 +265,85 @@ const OrderTicket = () => {
           </div>
         </div>
       )}
+      {/* ── Reset Tiket Salah Scan ── */}
+      <div className="rounded-xl border border-orange-200 bg-orange-50 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-orange-200 flex items-center gap-3">
+          <span className="material-symbols-outlined text-orange-600 text-2xl">restart_alt</span>
+          <div>
+            <h3 className="font-bold text-gray-900">Reset Tiket Salah Scan</h3>
+            <p className="text-xs text-orange-700 mt-0.5">
+              Gunakan jika tiket customer terlanjur ter-scan padahal belum waktunya — stok scan akan dikembalikan ke aktif.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Input */}
+          <div className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Masukkan kode tiket (contoh: TKT-XXXX)"
+              value={resetCode}
+              onChange={(e) => { setResetCode(e.target.value.toUpperCase()); setResetResult(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') void handleResetTicket(); }}
+              className="flex-1 px-4 py-2.5 border border-orange-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white font-mono"
+            />
+            <button
+              onClick={() => void handleResetTicket()}
+              disabled={resetLoading || !resetCode.trim()}
+              className="px-5 py-2.5 bg-orange-500 text-white text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {resetLoading
+                ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                : <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+              }
+              {resetLoading ? 'Memproses...' : 'Reset'}
+            </button>
+          </div>
+
+          {/* Result */}
+          {resetResult && (
+            <div className={`rounded-lg border p-4 ${resetResult.ok ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+              <div className="flex items-start gap-3">
+                <span className={`material-symbols-outlined text-2xl flex-shrink-0 ${resetResult.ok ? 'text-green-600' : 'text-red-500'}`}>
+                  {resetResult.ok ? 'check_circle' : 'error'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-bold text-sm ${resetResult.ok ? 'text-green-800' : 'text-red-800'}`}>
+                    {resetResult.message}
+                  </p>
+                  {(resetResult.ticketCode || resetResult.ticketName || resetResult.validDate) && (
+                    <div className="mt-2 text-xs space-y-1 text-gray-700">
+                      {resetResult.ticketCode && <p><span className="font-semibold">Kode:</span> {resetResult.ticketCode}</p>}
+                      {resetResult.ticketName && <p><span className="font-semibold">Tiket:</span> {resetResult.ticketName}</p>}
+                      {resetResult.validDate && (
+                        <p>
+                          <span className="font-semibold">Tanggal Valid:</span>{' '}
+                          {new Date(`${resetResult.validDate}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      )}
+                      {resetResult.usedAt && (
+                        <p className="text-orange-700">
+                          <span className="font-semibold">Sebelumnya di-scan:</span>{' '}
+                          {new Date(resetResult.usedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-orange-600">
+            ⚠️ Aksi ini tidak dapat di-undo secara otomatis. Pastikan tiket memang salah scan sebelum reset.
+          </p>
+        </div>
+      </div>
+
     </AdminLayout>
   );
 };
 
 export default OrderTicket;
+

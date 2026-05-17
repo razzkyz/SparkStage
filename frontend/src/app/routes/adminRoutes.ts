@@ -28,6 +28,7 @@ const BeautyPosterManager = lazy(() => import('../../pages/admin/BeautyPosterMan
 const EventBookings = lazy(() => import('../../pages/admin/EventBookings'));
 const VenueReviewsAdmin = lazy(() => import('../../pages/admin/VenueReviewsAdmin'));
 const TabletQRScanner = lazy(() => import('../../pages/admin/TabletQRScanner'));
+const SalesReport = lazy(() => import('../../pages/admin/SalesReport'));
 
 export const adminRouteConfigs: AppRouteConfig[] = [
   { path: '/admin/dashboard', Page: Dashboard },
@@ -56,4 +57,5 @@ export const adminRouteConfigs: AppRouteConfig[] = [
   { path: '/admin/event-bookings', Page: EventBookings },
   { path: '/admin/tablet-qr-scanner', Page: TabletQRScanner },
   { path: '/admin/venue-reviews', Page: VenueReviewsAdmin },
+  { path: '/admin/sales-report', Page: SalesReport },
 ];

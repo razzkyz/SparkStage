@@ -1,0 +1,634 @@
+import { useState, useMemo } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import AdminLayout from '../../components/AdminLayout';
+import { ADMIN_MENU_ITEMS } from '../../constants/adminMenu';
+import { useAdminMenuSections } from '../../hooks/useAdminMenuSections';
+import { supabase } from '../../lib/supabase';
+import { useQuery } from '@tanstack/react-query';
+
+const TICKET_PRICE = 85_000;
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface TicketRow {
+  id: number;
+  ticket_code: string | null;
+  valid_date: string;
+  time_slot: string | null;
+  status: string;
+  created_at: string;
+  used_at: string | null;
+  tickets: { name: string } | null;
+}
+
+type TicketRowRaw = TicketRow & {
+  tickets: { name: string }[] | { name: string } | null;
+};
+
+interface ProductOrderRow {
+  id: number;
+  order_number: string;
+  total: number;
+  payment_status: string | null;
+  pickup_status: string | null;
+  paid_at: string | null;
+  created_at: string | null;
+  profiles: { name?: string; email?: string } | null;
+  order_product_items: {
+    id: number;
+    quantity: number;
+    price: number;
+    subtotal: number;
+    product_variants?: {
+      name?: string;
+      products?: { name?: string } | null;
+    } | null;
+  }[];
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatRupiah(n: number) {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+}
+
+function formatDate(iso: string | null) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' });
+}
+
+function formatDatetime(iso: string | null) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+}
+
+function downloadCSV(filename: string, rows: string[][], headers: string[]) {
+  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const lines = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))];
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Hooks ─────────────────────────────────────────────────────────────────────
+
+function useTicketSales(enabled: boolean) {
+  return useQuery({
+    queryKey: ['sales-report-tickets'],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('purchased_tickets')
+        .select('id, ticket_code, valid_date, time_slot, status, created_at, used_at, tickets(name)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      // Normalize tickets from array to object
+      return ((data ?? []) as TicketRowRaw[]).map(d => ({
+        ...d,
+        tickets: Array.isArray(d.tickets) ? d.tickets[0] : d.tickets,
+      })) as TicketRow[];
+    },
+  });
+}
+
+function useProductSales(enabled: boolean) {
+  return useQuery({
+    queryKey: ['sales-report-products'],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('order_products')
+        .select('id, order_number, total, payment_status, pickup_status, paid_at, created_at, profiles(name,email), order_product_items(id,quantity,price,subtotal,product_variants(name,products(name)))')
+        .eq('payment_status', 'paid')
+        .order('paid_at', { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as ProductOrderRow[];
+    },
+  });
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+
+export default function SalesReport() {
+  const { signOut, session, isAdmin } = useAuth();
+  const menuSections = useAdminMenuSections();
+  const queryEnabled = !!session && isAdmin;
+
+  const today = new Date().toISOString().split('T')[0];
+  const firstOfMonth = today.slice(0, 8) + '01';
+
+  const [from, setFrom] = useState(firstOfMonth);
+  const [to,   setTo]   = useState(today);
+  const [tab, setTab] = useState<'tickets' | 'products'>('tickets');
+  const [ticketPage, setTicketPage] = useState(1);
+  const [productPage, setProductPage] = useState(1);
+
+  const { data: tickets  = [], isLoading: ticketsLoading,  error: ticketsError  } = useTicketSales(queryEnabled);
+  const { data: products = [], isLoading: productsLoading, error: productsError } = useProductSales(queryEnabled);
+
+  const queryError = ticketsError || productsError;
+  const isAuthError = queryError instanceof Error &&
+    (queryError.message.includes('JWT') ||
+     queryError.message.includes('token') ||
+     queryError.message.includes('401') ||
+     queryError.message.includes('403') ||
+     queryError.message.includes('400'));
+
+  // ── Client-side date filter ───────────────────────────────────────────
+  const fromMs = from ? new Date(from + 'T00:00:00').getTime() : 0;
+  const toMs   = to   ? new Date(to   + 'T23:59:59').getTime() : Infinity;
+
+  const filteredTickets = useMemo(() =>
+    tickets.filter(t => {
+      const ms = new Date(t.created_at).getTime();
+      return ms >= fromMs && ms <= toMs;
+    }),
+    [tickets, fromMs, toMs]
+  );
+
+  const filteredProducts = useMemo(() =>
+    products.filter(o => {
+      const dateStr = o.paid_at || o.created_at;
+      if (!dateStr) return false;
+      const ms = new Date(dateStr).getTime();
+      return ms >= fromMs && ms <= toMs;
+    }),
+    [products, fromMs, toMs]
+  );
+
+  // ── Pagination ───────────────────────────────────────────────────
+  const ITEMS_PER_PAGE = 100;
+  
+  const ticketPagination = useMemo(() => {
+    const total = filteredTickets.length;
+    const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+    const page = Math.max(1, Math.min(ticketPage, totalPages));
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return {
+      data: filteredTickets.slice(start, end),
+      page,
+      totalPages,
+      total,
+      start,
+    };
+  }, [filteredTickets, ticketPage]);
+
+  const productPagination = useMemo(() => {
+    const total = filteredProducts.length;
+    const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+    const page = Math.max(1, Math.min(productPage, totalPages));
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return {
+      data: filteredProducts.slice(start, end),
+      page,
+      totalPages,
+      total,
+      start,
+    };
+  }, [filteredProducts, productPage]);
+
+  // ── Summaries ────────────────────────────────────────────────────────────
+  const ticketStats = useMemo(() => {
+    const paid = filteredTickets.length;
+    const revenue = paid * TICKET_PRICE;
+    const used = filteredTickets.filter(t => t.status === 'used').length;
+    return { paid, revenue, used };
+  }, [filteredTickets]);
+  // Reset pages when filters change
+  useMemo(() => {
+    setTicketPage(1);
+    setProductPage(1);
+  }, [from, to]);
+  const productStats = useMemo(() => {
+    const orders = filteredProducts.length;
+    const revenue = filteredProducts.reduce((s, o) => s + (o.total || 0), 0);
+    const items = filteredProducts.reduce((s, o) => s + o.order_product_items.reduce((ss, i) => ss + i.quantity, 0), 0);
+    return { orders, revenue, items };
+  }, [filteredProducts]);
+
+  const totalRevenue = ticketStats.revenue + productStats.revenue;
+
+  // ── CSV Exports ──────────────────────────────────────────────────────────
+  function exportTicketsCSV() {
+    const headers = ['No', 'Kode Tiket', 'Nama Tiket', 'Tanggal Valid', 'Sesi', 'Status', 'Harga (Rp)', 'Dibuat', 'Dipakai'];
+    const rows = filteredTickets.map((t, i) => [
+      String(i + 1),
+      t.ticket_code ?? '-',
+      t.tickets?.name ?? '-',
+      formatDate(t.valid_date),
+      t.time_slot ?? '-',
+      t.status,
+      String(TICKET_PRICE),
+      formatDatetime(t.created_at),
+      formatDatetime(t.used_at),
+    ]);
+    // Add empty row and total row
+    rows.push(['', '', '', '', '', '', '', '', '']);
+    rows.push(['', '', 'TOTAL', '', '', '', String(ticketStats.revenue), '', '']);
+    const ts = new Date().toISOString().slice(0, 10);
+    downloadCSV(`laporan-tiket-${ts}.csv`, rows, headers);
+  }
+
+  function exportProductsCSV() {
+    const headers = ['No', 'No. Order', 'Nama Customer', 'Email', 'Total (Rp)', 'Status Bayar', 'Status Pickup', 'Item', 'Tanggal Bayar', 'Dibuat'];
+    const rows = filteredProducts.map((o, i) => {
+      const itemSummary = o.order_product_items
+        .map(it => `${it.product_variants?.products?.name ?? ''} ${it.product_variants?.name ?? ''} x${it.quantity}`)
+        .join(' | ');
+      return [
+        String(i + 1),
+        o.order_number,
+        o.profiles?.name ?? '-',
+        o.profiles?.email ?? '-',
+        String(o.total),
+        o.payment_status ?? '-',
+        o.pickup_status ?? '-',
+        itemSummary,
+        formatDatetime(o.paid_at),
+        formatDatetime(o.created_at),
+      ];
+    });
+    // Add empty row and total row
+    rows.push(['', '', '', '', '', '', '', '', '', '']);
+    rows.push(['', '', 'TOTAL', '', String(productStats.revenue), '', '', '', '', '']);
+    const ts = new Date().toISOString().slice(0, 10);
+    downloadCSV(`laporan-produk-${ts}.csv`, rows, headers);
+  }
+
+  const isLoading = tab === 'tickets' ? ticketsLoading : productsLoading;
+
+  return (
+    <AdminLayout
+      menuItems={ADMIN_MENU_ITEMS}
+      menuSections={menuSections}
+      defaultActiveMenuId="sales-report"
+      title="Laporan Penjualan"
+      onLogout={signOut}
+    >
+      {/* ── Auth / Query Error Banner ──────────────────────────── */}
+      {queryError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-3">
+          <span className="material-symbols-outlined text-red-500 text-2xl flex-shrink-0">error</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-red-800 text-sm">
+              {isAuthError ? 'Sesi habis — silakan login ulang' : 'Gagal memuat data'}
+            </p>
+            <p className="text-red-600 text-xs mt-1">
+              {isAuthError
+                ? 'Token autentikasi tidak valid. Klik "Keluar" lalu login kembali untuk melanjutkan.'
+                : (queryError instanceof Error ? queryError.message : 'Terjadi kesalahan saat mengambil data.')}
+            </p>
+          </div>
+          {isAuthError && (
+            <button
+              onClick={signOut}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors flex-shrink-0"
+            >
+              <span className="material-symbols-outlined text-sm">logout</span>
+              Keluar
+            </button>
+          )}
+        </div>
+      )}
+      {/* ── Summary Cards ─────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Pendapatan', value: formatRupiah(totalRevenue), icon: 'payments', color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+          { label: 'Tiket Terjual', value: `${ticketStats.paid} tiket`, icon: 'confirmation_number', color: 'text-violet-600', bg: 'bg-violet-50 border-violet-200' },
+          { label: 'Pendapatan Tiket', value: formatRupiah(ticketStats.revenue), icon: 'local_activity', color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+          { label: 'Pendapatan Produk', value: formatRupiah(productStats.revenue), icon: 'shopping_bag', color: 'text-pink-600', bg: 'bg-pink-50 border-pink-200' },
+        ].map(card => (
+          <div key={card.label} className={`rounded-xl border ${card.bg} p-4 flex flex-col gap-2`}>
+            <div className="flex items-center gap-2">
+              <span className={`material-symbols-outlined text-xl ${card.color}`}>{card.icon}</span>
+              <p className="text-xs text-gray-500">{card.label}</p>
+            </div>
+            <p className="text-xl font-black text-gray-900 leading-tight">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Filter Bar ────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <span className="material-symbols-outlined text-gray-400 hidden sm:block">filter_list</span>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <label className="text-xs text-gray-500 whitespace-nowrap">Dari</label>
+          <input
+            type="date"
+            value={from}
+            onChange={e => setFrom(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-main-500"
+          />
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <label className="text-xs text-gray-500 whitespace-nowrap">Sampai</label>
+          <input
+            type="date"
+            value={to}
+            onChange={e => setTo(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-main-500"
+          />
+        </div>
+        <button
+          onClick={() => { setFrom(firstOfMonth); setTo(today); }}
+          className="text-xs text-gray-500 hover:text-gray-800 transition-colors flex items-center gap-1 ml-auto"
+        >
+          <span className="material-symbols-outlined text-sm">restart_alt</span>
+          Reset
+        </button>
+      </div>
+
+      {/* ── Tabs + Export ─────────────────────────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 gap-2 flex-wrap">
+          {/* Tab Switcher */}
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setTab('tickets')}
+              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-colors ${tab === 'tickets' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">confirmation_number</span>
+                Tiket ({ticketStats.paid})
+              </span>
+            </button>
+            <button
+              onClick={() => setTab('products')}
+              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-colors ${tab === 'products' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">shopping_bag</span>
+                Produk ({productStats.orders})
+              </span>
+            </button>
+          </div>
+
+          {/* Export Button */}
+          <button
+            onClick={tab === 'tickets' ? exportTicketsCSV : exportProductsCSV}
+            disabled={isLoading || (tab === 'tickets' ? tickets.length === 0 : products.length === 0)}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+        </div>
+
+        {/* ── Tickets Table ──────────────────────────────────────── */}
+        {tab === 'tickets' && (
+          <>
+            <div className="px-4 py-2 bg-violet-50 border-b border-violet-100 flex items-center gap-2">
+              <span className="text-xs text-violet-700">
+                Harga per tiket: <strong>{formatRupiah(TICKET_PRICE)}</strong>
+              </span>
+              <span className="text-xs text-gray-400">·</span>
+              <span className="text-xs text-violet-700">
+                Total: <strong>{formatRupiah(ticketStats.revenue)}</strong>
+              </span>
+              <span className="text-xs text-gray-400">·</span>
+              <span className="text-xs text-violet-700">
+                Sudah masuk: <strong>{ticketStats.used}</strong>
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {['No', 'Kode Tiket', 'Nama Tiket', 'Tanggal Valid', 'Sesi', 'Status', 'Harga', 'Dibuat'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i}>
+                        {Array.from({ length: 8 }).map((_, j) => (
+                          <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse w-20" /></td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : ticketPagination.data.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-10 text-center text-gray-400">
+                        <span className="material-symbols-outlined text-4xl mb-2 block">inbox</span>
+                        Tidak ada data tiket di periode ini
+                      </td>
+                    </tr>
+                  ) : ticketPagination.data.map((t, i) => (
+                    <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-gray-500 text-xs">{ticketPagination.start + i + 1}</td>
+                      <td className="px-4 py-3 font-mono font-semibold text-gray-900 text-xs">{t.ticket_code ?? '-'}</td>
+                      <td className="px-4 py-3 text-gray-700">{t.tickets?.name ?? '-'}</td>
+                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatDate(t.valid_date)}</td>
+                      <td className="px-4 py-3 text-gray-600">{t.time_slot?.slice(0, 5) ?? '-'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                          t.status === 'active'  ? 'bg-green-100 text-green-700' :
+                          t.status === 'used'    ? 'bg-blue-100 text-blue-700' :
+                          t.status === 'expired' ? 'bg-gray-100 text-gray-500' :
+                          'bg-red-100 text-red-700'
+                        }`}>{t.status}</span>
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">{formatRupiah(TICKET_PRICE)}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{formatDate(t.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {!isLoading && ticketPagination.data.length > 0 && (
+              <div className="px-4 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-4 text-xs text-gray-600">
+                  <span>
+                    Menampilkan <strong>{ticketPagination.start + 1}–{Math.min(ticketPagination.start + ITEMS_PER_PAGE, ticketPagination.total)}</strong> dari <strong>{ticketPagination.total}</strong> tiket
+                  </span>
+                  <span>·</span>
+                  <span className="font-bold text-gray-900">{formatRupiah(ticketStats.revenue)}</span>
+                </div>
+                
+                {ticketPagination.totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setTicketPage(p => Math.max(1, p - 1))}
+                      disabled={ticketPagination.page === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                      Sebelumnya
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: ticketPagination.totalPages }).map((_, i) => {
+                        const pageNum = i + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setTicketPage(pageNum)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                              ticketPagination.page === pageNum
+                                ? 'bg-violet-600 text-white'
+                                : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setTicketPage(p => Math.min(ticketPagination.totalPages, p + 1))}
+                      disabled={ticketPagination.page === ticketPagination.totalPages}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Berikutnya
+                      <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Products Table ─────────────────────────────────────── */}
+        {tab === 'products' && (
+          <>
+            <div className="px-4 py-2 bg-pink-50 border-b border-pink-100 flex items-center gap-2">
+              <span className="text-xs text-pink-700">
+                Total pesanan lunas: <strong>{productStats.orders}</strong>
+              </span>
+              <span className="text-xs text-gray-400">·</span>
+              <span className="text-xs text-pink-700">
+                Total item: <strong>{productStats.items}</strong>
+              </span>
+              <span className="text-xs text-gray-400">·</span>
+              <span className="text-xs text-pink-700">
+                Revenue: <strong>{formatRupiah(productStats.revenue)}</strong>
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {['No', 'No. Order', 'Customer', 'Item', 'Total', 'Status', 'Pickup', 'Tanggal Bayar'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {productsLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i}>
+                        {Array.from({ length: 8 }).map((_, j) => (
+                          <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse w-20" /></td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : productPagination.data.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-10 text-center text-gray-400">
+                        <span className="material-symbols-outlined text-4xl mb-2 block">inbox</span>
+                        Tidak ada pesanan produk lunas di periode ini
+                      </td>
+                    </tr>
+                  ) : productPagination.data.map((o, i) => {
+                    const itemSummary = o.order_product_items
+                      .map(it => `${it.product_variants?.products?.name ?? ''} ${it.product_variants?.name ?? ''} ×${it.quantity}`.trim())
+                      .join(', ');
+                    return (
+                      <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-gray-500 text-xs">{productPagination.start + i + 1}</td>
+                        <td className="px-4 py-3 font-mono font-semibold text-gray-900 text-xs">{o.order_number}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-gray-900 text-xs">{o.profiles?.name ?? '-'}</p>
+                          <p className="text-gray-400 text-xs">{o.profiles?.email ?? ''}</p>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 text-xs max-w-[200px]">
+                          <span title={itemSummary} className="line-clamp-2">{itemSummary || '-'}</span>
+                        </td>
+                        <td className="px-4 py-3 font-bold text-gray-900 whitespace-nowrap">{formatRupiah(o.total)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            o.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>{o.payment_status ?? '-'}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            o.pickup_status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                            o.pickup_status === 'pending_pickup' ? 'bg-orange-100 text-orange-700' :
+                            'bg-gray-100 text-gray-500'
+                          }`}>{o.pickup_status ?? '-'}</span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{formatDate(o.paid_at)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {!productsLoading && productPagination.data.length > 0 && (
+              <div className="px-4 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-4 text-xs text-gray-600">
+                  <span>
+                    Menampilkan <strong>{productPagination.start + 1}–{Math.min(productPagination.start + ITEMS_PER_PAGE, productPagination.total)}</strong> dari <strong>{productPagination.total}</strong> pesanan
+                  </span>
+                  <span>·</span>
+                  <span className="font-bold text-gray-900">{formatRupiah(productStats.revenue)}</span>
+                </div>
+                
+                {productPagination.totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setProductPage(p => Math.max(1, p - 1))}
+                      disabled={productPagination.page === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-pink-300 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-700 disabled:hover:bg-gray-100"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                      Sebelumnya
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: productPagination.totalPages }).map((_, i) => {
+                        const pageNum = i + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setProductPage(pageNum)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                              productPagination.page === pageNum
+                                ? 'bg-pink-600 text-white'
+                                : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setProductPage(p => Math.min(productPagination.totalPages, p + 1))}
+                      disabled={productPagination.page === productPagination.totalPages}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-pink-300 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-700 disabled:hover:bg-gray-100"
+                    >
+                      Berikutnya
+                      <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </AdminLayout>
+  );
+}
