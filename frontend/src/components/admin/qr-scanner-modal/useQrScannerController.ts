@@ -18,6 +18,7 @@ export function useQrScannerController({
   closeOnErrorDelayMs = 3000,
   sequenceNumber,
   description,
+  preferredCamera = 'back',
 }: QrScannerModalProps): QrScannerControllerResult {
   const readerId = useMemo(() => `qr-reader-${Date.now()}-${Math.random().toString(16).slice(2)}`, []);
   const qrRef = useRef<Html5Qrcode | null>(null);
@@ -257,22 +258,31 @@ export function useQrScannerController({
 
     const onScanFailure = () => undefined;
 
-    const pickFrontCameraId = async () => {
+    const pickCameraId = async (preferred: 'front' | 'back') => {
       try {
         const devices = await Html5Qrcode.getCameras();
         if (!devices?.length) return null;
-        const front = devices.find((device) => {
+        
+        const target = devices.find((device) => {
           const label = (device.label || '').toLowerCase();
-          return label.includes('front') || label.includes('user') || label.includes('face');
+          if (preferred === 'front') {
+            return label.includes('front') || label.includes('user') || label.includes('face');
+          } else {
+            return label.includes('back') || label.includes('rear') || label.includes('environment');
+          }
         });
-        return (front?.id || devices[0].id) ?? null;
+        
+        if (target) return target.id;
+        
+        if (preferred === 'front') return devices[0].id;
+        return devices[devices.length - 1].id;
       } catch {
         return null;
       }
     };
 
     try {
-      const cameraId = await pickFrontCameraId();
+      const cameraId = await pickCameraId(preferredCamera);
       if (!isScannerLifecycleActive(lifecycleId)) {
         try {
           await qr.clear();
@@ -283,12 +293,14 @@ export function useQrScannerController({
         return;
       }
 
+      const targetFacingMode = preferredCamera === 'front' ? 'user' : 'environment';
+
       if (cameraId) {
         await qr.start(cameraId, config, onScanSuccessHandler, onScanFailure);
       } else if (appleDevice) {
-        await qr.start({ facingMode: 'user' }, config, onScanSuccessHandler, onScanFailure);
+        await qr.start({ facingMode: targetFacingMode }, config, onScanSuccessHandler, onScanFailure);
       } else {
-        await qr.start({ facingMode: { exact: 'user' } }, config, onScanSuccessHandler, onScanFailure);
+        await qr.start({ facingMode: { exact: targetFacingMode } }, config, onScanSuccessHandler, onScanFailure);
       }
       if (!isScannerLifecycleActive(lifecycleId)) {
         await stopScanner();
@@ -296,8 +308,9 @@ export function useQrScannerController({
       }
       setStatus('scanning');
     } catch (primaryError) {
+      const targetFacingMode = preferredCamera === 'front' ? 'user' : 'environment';
       try {
-        await qr.start({ facingMode: 'user' }, config, onScanSuccessHandler, onScanFailure);
+        await qr.start({ facingMode: targetFacingMode }, config, onScanSuccessHandler, onScanFailure);
         if (!isScannerLifecycleActive(lifecycleId)) {
           await stopScanner();
           return;
@@ -328,6 +341,7 @@ export function useQrScannerController({
     handleClose,
     isScannerLifecycleActive,
     onScan,
+    preferredCamera,
     readerId,
     rememberRecentScan,
     stopScanner,

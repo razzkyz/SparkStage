@@ -15,6 +15,7 @@ export type QrScannerModalProps = {
   closeOnErrorDelayMs?: number;
   sequenceNumber?: string;
   description?: string;
+  preferredCamera?: 'front' | 'back';
 };
 
 export type QrScannerControllerResult = {

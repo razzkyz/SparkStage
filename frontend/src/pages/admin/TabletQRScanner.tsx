@@ -110,6 +110,7 @@ const TabletQRScanner = () => {
                 title="Scan QR Tablet"
                 closeOnSuccess={false}
                 closeOnError={false}
+                preferredCamera="front"
               />
             )}
           </div>
