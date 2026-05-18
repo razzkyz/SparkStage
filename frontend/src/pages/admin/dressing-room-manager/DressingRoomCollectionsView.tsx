@@ -14,6 +14,7 @@ type DressingRoomCollectionsViewProps = {
   onToggleActive: (collection: DressingRoomCollection) => void;
   onOpenEditor: (collection: DressingRoomCollection) => void;
   onDeleteCollection: (collectionId: number) => void;
+  onOpenCSVImport?: () => void;
 };
 
 export function DressingRoomCollectionsView({
@@ -30,17 +31,29 @@ export function DressingRoomCollectionsView({
   onToggleActive,
   onOpenEditor,
   onDeleteCollection,
+  onOpenCSVImport,
 }: DressingRoomCollectionsViewProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-gray-800">Koleksi</h2>
-        <button
-          onClick={onToggleCreateForm}
-          className="px-4 py-2 text-sm font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          {showCreateForm ? 'Batal' : '+ Koleksi Baru'}
-        </button>
+        <div className="flex gap-2">
+          {onOpenCSVImport && (
+            <button
+              onClick={onOpenCSVImport}
+              className="flex shrink-0 items-center justify-center gap-2 px-4 py-2 text-sm font-semibold border border-pink-300 bg-pink-50 text-pink-700 rounded-lg hover:bg-pink-100 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">upload_file</span>
+              Import CSV
+            </button>
+          )}
+          <button
+            onClick={onToggleCreateForm}
+            className="px-4 py-2 text-sm font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            {showCreateForm ? 'Batal' : '+ Koleksi Baru'}
+          </button>
+        </div>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">

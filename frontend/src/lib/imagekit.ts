@@ -25,7 +25,8 @@ type UploadFileToImageKitParams = {
   accessToken: string;
   file: File;
   fileName: string;
-  productId: number | string;
+  productId?: number | string;
+  folderPath?: string;
   providerOriginalUrl?: string | null;
 };
 
@@ -57,10 +58,14 @@ export function buildImageKitThumbUrl(imageUrl: string, options?: { width?: numb
   });
 }
 
-async function getImageKitUploadAuth(accessToken: string, productId: number | string): Promise<ImageKitUploadAuthResponse> {
+async function getImageKitUploadAuth(accessToken: string, productId?: number | string, folderPath?: string): Promise<ImageKitUploadAuthResponse> {
+  const body: Record<string, unknown> = {};
+  if (productId) body.productId = productId;
+  if (folderPath) body.folderPath = folderPath;
+
   const data = await invokeSupabaseFunction<ImageKitUploadAuthResponse>({
     functionName: 'imagekit-auth',
-    body: { productId },
+    body,
     headers: { Authorization: `Bearer ${accessToken}` },
     fallbackMessage: 'Failed to fetch ImageKit upload auth',
   });
@@ -96,7 +101,7 @@ function mapUploadResponseToRecord(uploadResponse: UploadResponse, providerOrigi
 }
 
 export async function uploadFileToImageKit(params: UploadFileToImageKitParams): Promise<ProductImageRecordInput> {
-  const auth = await getImageKitUploadAuth(params.accessToken, params.productId);
+  const auth = await getImageKitUploadAuth(params.accessToken, params.productId, params.folderPath);
   const uploadResponse = await upload({
     file: params.file,
     fileName: params.fileName,

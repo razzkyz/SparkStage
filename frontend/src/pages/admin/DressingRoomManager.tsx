@@ -7,11 +7,17 @@ import { useAdminMenuSections } from '../../hooks/useAdminMenuSections';
 import { DressingRoomCollectionsView } from './dressing-room-manager/DressingRoomCollectionsView';
 import { DressingRoomEditorView } from './dressing-room-manager/DressingRoomEditorView';
 import { useDressingRoomManagerController } from './dressing-room-manager/useDressingRoomManagerController';
+import { DressingRoomCSVImportModal } from '../../components/admin/DressingRoomCSVImportModal';
+import { saveInventoryProductMutation } from './store-inventory/inventoryProductMutations';
+import { supabase } from '../../lib/supabase';
+import { useState } from 'react';
 
 // ─── Component ──────────────────────────────────────────────────────────
 export default function DressingRoomManager() {
-    const { signOut } = useAuth();
+    const { signOut, session, getValidAccessToken, refreshSession } = useAuth();
     const menuSections = useAdminMenuSections();
+    const [showCSVImport, setShowCSVImport] = useState(false);
+    const [isImportingCSV, setIsImportingCSV] = useState(false);
     const { showToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const controller = useDressingRoomManagerController(showToast);
@@ -25,6 +31,48 @@ export default function DressingRoomManager() {
         handleReplacePhoto, handleDeletePhoto, handleSaveModelName, handleDeleteLook, searchProducts, handleLinkProduct, handleUnlinkProduct,
         containerRef, getActivePhotoIndex, setActivePhotoIndex, goPhotoNext, goPhotoPrev, handleDragEnd,
     } = controller;
+
+    const handleCSVImport = async (drafts: any[]) => {
+        setIsImportingCSV(true);
+        let successCount = 0;
+        let failCount = 0;
+
+        try {
+            // Get Dressing Room category id
+            const { data: category } = await supabase
+                .from('categories')
+                .select('id')
+                .eq('name', 'Dressing Room')
+                .single();
+            
+            const categoryId = category?.id || null;
+
+            for (const draft of drafts) {
+                try {
+                    await saveInventoryProductMutation({
+                        draft: { ...draft, category_id: categoryId },
+                        newImages: [],
+                        removedImageUrls: [],
+                        auth: { session, getValidAccessToken, refreshSession },
+                    });
+                    successCount++;
+                } catch (error) {
+                    failCount++;
+                    console.error(`Failed to import ${draft.name}:`, error);
+                }
+            }
+
+            showToast(
+                failCount === 0 ? 'success' : 'info',
+                `Import selesai: ${successCount} produk berhasil${failCount > 0 ? `, ${failCount} gagal` : ''}`
+            );
+        } catch (error) {
+            console.error('Failed to process CSV import:', error);
+            showToast('error', 'Terjadi kesalahan saat memproses import CSV');
+        } finally {
+            setIsImportingCSV(false);
+        }
+    };
 
     // ── Render ────────────────────────────────────────────────────────────
     return (
@@ -61,6 +109,7 @@ export default function DressingRoomManager() {
                     formTitle={formTitle}
                     formDescription={formDescription}
                     onToggleCreateForm={() => setShowCreateForm(!showCreateForm)}
+                    onOpenCSVImport={() => setShowCSVImport(true)}
                     onChangeFormTitle={setFormTitle}
                     onChangeFormDescription={setFormDescription}
                     onCreateCollection={() => void handleCreateCollection()}
@@ -117,6 +166,13 @@ export default function DressingRoomManager() {
                     onDragEnd={handleDragEnd}
                 />
             )}
+
+            <DressingRoomCSVImportModal
+                isOpen={showCSVImport}
+                onClose={() => setShowCSVImport(false)}
+                onImport={handleCSVImport}
+                isImporting={isImportingCSV}
+            />
         </AdminLayout>
     );
 }

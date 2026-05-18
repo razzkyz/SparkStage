@@ -7,6 +7,7 @@ import AdminLayout from '../../components/AdminLayout';
 import { ADMIN_MENU_ITEMS } from '../../constants/adminMenu';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminMenuSections } from '../../hooks/useAdminMenuSections';
+import { uploadFileToImageKit } from '../../lib/imagekit';
 
 type RentalOrderStatus = 'awaiting_payment' | 'paid' | 'active' | 'overdue' | 'returned' | 'cancelled' | 'refunded';
 type PageTab = 'sewa_formal' | 'costume_harian';
@@ -75,10 +76,10 @@ interface DressingRoomOrder {
 }
 
 export default function RentalOrders() {
-  const { signOut } = useAuth();
+  const { signOut, getValidAccessToken } = useAuth();
   const menuSections = useAdminMenuSections();
   // Page-level tab
-  const [activePageTab, setActivePageTab] = useState<PageTab>('sewa_formal');
+  const [activePageTab, setActivePageTab] = useState<PageTab>('costume_harian');
   // Sewa Formal state
   const [orders, setOrders] = useState<RentalOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<RentalOrder | null>(null);
@@ -153,7 +154,12 @@ export default function RentalOrders() {
     fetchOrderItems(order.id);
   };
 
-  const handleReturn = async (returnTime: Date, conditions: Record<number, string>) => {
+  const handleReturn = async (
+    returnTime: Date,
+    conditions: Record<number, string>,
+    itemStatuses: Record<number, string>,
+    rejectPhotos: Record<number, File>
+  ) => {
     if (!selectedOrder) return;
 
     try {
@@ -172,14 +178,33 @@ export default function RentalOrders() {
 
       if (orderError) throw orderError;
 
-      // Update items with conditions
-      for (const [itemId, condition] of Object.entries(conditions)) {
+      // Upload reject photos to ImageKit
+      const uploadedUrls: Record<number, string> = {};
+      const accessToken = await getValidAccessToken();
+      
+      for (const [itemIdStr, file] of Object.entries(rejectPhotos)) {
+         if (accessToken) {
+             const result = await uploadFileToImageKit({
+                 accessToken,
+                 file,
+                 fileName: `reject-${itemIdStr}-${Date.now()}`,
+                 folderPath: `/public/dressing-room/rejects/${selectedOrder.id}`
+             });
+             uploadedUrls[parseInt(itemIdStr)] = result.image_url;
+         }
+      }
+
+      // Update items with conditions, item_status, and reject_photo_url
+      for (const [itemIdStr, condition] of Object.entries(conditions)) {
+        const itemId = parseInt(itemIdStr);
         await supabase
           .from('rental_order_items')
           .update({
             return_condition: { condition },
+            item_status: itemStatuses[itemId] || 'returned',
+            reject_photo_url: uploadedUrls[itemId] || null
           })
-          .eq('id', parseInt(itemId));
+          .eq('id', itemId);
       }
 
       // Calculate total damage deduction
@@ -245,20 +270,15 @@ export default function RentalOrders() {
             product_variants(name, products(name, categories(name)))
           )
         `)
-        .eq('pickup_status', 'completed')
+        .not('paid_at', 'is', null)
         .order('updated_at', { ascending: false })
         .limit(200);
 
       if (error) throw error;
 
-      // Keep only orders that have at least one dressing-room-category item
-      const filtered = (data || []).filter((order: any) =>
-        (order.order_product_items || []).some((item: any) =>
-          (item.product_variants?.products?.categories?.name || '')
-            .toLowerCase()
-            .includes('dressing')
-        )
-      );
+      // For now, show ALL product orders since the user mentioned they aren't seeing any data.
+      // If needed, we can re-add specific category filtering later when categories are strictly defined.
+      const filtered = data || [];
       setDressingRoomOrders(filtered as DressingRoomOrder[]);
     } catch (err) {
       console.error('Failed to fetch dressing room orders:', err);
@@ -952,13 +972,23 @@ function ReturnModal({
   order: RentalOrder;
   items: RentalOrderItem[];
   onClose: () => void;
-  onSubmit: (returnTime: Date, conditions: Record<number, string>) => void;
+  onSubmit: (
+    returnTime: Date,
+    conditions: Record<number, string>,
+    itemStatuses: Record<number, string>,
+    rejectPhotos: Record<number, File>
+  ) => void;
 }) {
   const [returnTime, setReturnTime] = useState(new Date());
   const [conditions, setConditions] = useState<Record<number, string>>({});
+  const [itemStatuses, setItemStatuses] = useState<Record<number, string>>({});
+  const [rejectPhotos, setRejectPhotos] = useState<Record<number, File>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    onSubmit(returnTime, conditions);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    await onSubmit(returnTime, conditions, itemStatuses, rejectPhotos);
+    setIsSubmitting(false);
   };
 
   return (
@@ -993,24 +1023,68 @@ function ReturnModal({
 
           {/* Item Conditions */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Kondisi Item</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Kondisi Item & Status Pengembalian</label>
             <div className="space-y-3">
-              {items.map((item) => (
-                <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
-                  <p className="font-medium text-gray-900 mb-2">{item.product_name}</p>
-                  <select
-                    value={conditions[item.id] || 'normal'}
-                    onChange={(e) => setConditions({ ...conditions, [item.id]: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-main-500 text-sm"
-                  >
-                    <option value="normal">Normal</option>
-                    <option value="stained">Bernoda (-10rb)</option>
-                    <option value="button_missing">Kancing Copot (-10rb)</option>
-                    <option value="damaged">Rusak Ringan (-10rb)</option>
-                    <option value="severely_damaged">Rusak Parah (Deposit Hangus)</option>
-                  </select>
-                </div>
-              ))}
+              {items.map((item) => {
+                const isRejected = itemStatuses[item.id] === 'rejected';
+                return (
+                  <div key={item.id} className="p-3 bg-gray-50 rounded-lg space-y-3">
+                    <p className="font-medium text-gray-900">{item.product_name}</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Status Barang</label>
+                        <select
+                          value={itemStatuses[item.id] || 'returned'}
+                          onChange={(e) => setItemStatuses({ ...itemStatuses, [item.id]: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-main-500 text-sm"
+                        >
+                          <option value="returned">Dikembalikan (Normal)</option>
+                          <option value="laundry">Masuk Laundry</option>
+                          <option value="rejected">Reject / Rusak</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Kondisi (Denda)</label>
+                        <select
+                          value={conditions[item.id] || 'normal'}
+                          onChange={(e) => setConditions({ ...conditions, [item.id]: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-main-500 text-sm"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="stained">Bernoda (-10rb)</option>
+                          <option value="button_missing">Kancing Copot (-10rb)</option>
+                          <option value="damaged">Rusak Ringan (-10rb)</option>
+                          <option value="severely_damaged">Rusak Parah (Deposit Hangus)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {isRejected && (
+                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <label className="block text-xs font-semibold text-red-900 mb-2">
+                          Upload Foto Bukti Reject (Wajib)
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setRejectPhotos({ ...rejectPhotos, [item.id]: file });
+                            }
+                          }}
+                          className="block w-full text-sm text-red-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200"
+                        />
+                        {rejectPhotos[item.id] && (
+                          <p className="mt-2 text-xs text-red-700 font-medium">✓ File terpilih: {rejectPhotos[item.id].name}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1024,9 +1098,10 @@ function ReturnModal({
             </button>
             <button
               onClick={handleSubmit}
-              className="flex-1 px-4 py-3 bg-main-600 text-white rounded-lg hover:bg-main-700 transition-colors font-semibold"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-3 bg-main-600 text-white rounded-lg hover:bg-main-700 transition-colors font-semibold disabled:opacity-50"
             >
-              Proses
+              {isSubmitting ? 'Memproses...' : 'Proses'}
             </button>
           </div>
         </div>
@@ -1132,9 +1207,10 @@ function CostumeHarianSection({
   const laundryCount = orders.filter((o) => o.costume_return_status === 'in_laundry').length;
   const returnedCount = orders.filter((o) => o.costume_return_status === 'returned').length;
 
-  const getStatusChip = (status: DressingRoomOrder['costume_return_status']) => {
-    if (!status) return { label: 'Selesai Sesi', cls: 'bg-yellow-100 text-yellow-800' };
-    if (status === 'in_laundry') return { label: '🧺 Sedang Laundry', cls: 'bg-blue-100 text-blue-800' };
+  const getStatusChip = (order: DressingRoomOrder) => {
+    if (order.pickup_status !== 'completed') return { label: '⏳ Belum Selesai Sesi', cls: 'bg-gray-100 text-gray-800' };
+    if (!order.costume_return_status) return { label: 'Selesai Sesi', cls: 'bg-yellow-100 text-yellow-800' };
+    if (order.costume_return_status === 'in_laundry') return { label: '🧺 Sedang Laundry', cls: 'bg-blue-100 text-blue-800' };
     return { label: '✅ Stok Dikembalikan', cls: 'bg-green-100 text-green-800' };
   };
 
@@ -1208,7 +1284,7 @@ function CostumeHarianSection({
       ) : (
         <div className="space-y-3">
           {filtered.map((order) => {
-            const chip = getStatusChip(order.costume_return_status);
+            const chip = getStatusChip(order);
             const isLoading = actionLoading === order.id;
 
             return (
@@ -1257,21 +1333,35 @@ function CostumeHarianSection({
                 </div>
 
                 {/* Action buttons */}
-                {order.costume_return_status !== 'returned' && (
+                {order.pickup_status === 'completed' && order.costume_return_status !== 'returned' && (
                   <div className="flex gap-2 pt-1">
                     {!order.costume_return_status && (
-                      <button
-                        onClick={() => onSendLaundry(order.id)}
-                        disabled={isLoading}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <RefreshCw className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <span>🧺</span>
-                        )}
-                        Kirim Laundry
-                      </button>
+                      <>
+                        <button
+                          onClick={() => onReturnStock(order.id)}
+                          disabled={isLoading}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <span>✅</span>
+                          )}
+                          Kembalikan (Sesi 1-2)
+                        </button>
+                        <button
+                          onClick={() => onSendLaundry(order.id)}
+                          disabled={isLoading}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <span>🧺</span>
+                          )}
+                          Kirim Laundry (Sesi 3)
+                        </button>
+                      </>
                     )}
                     {order.costume_return_status === 'in_laundry' && (
                       <button
@@ -1284,7 +1374,7 @@ function CostumeHarianSection({
                         ) : (
                           <span>✅</span>
                         )}
-                        Pengembalian Stok
+                        Sudah Laundry (Kembalikan Stok)
                       </button>
                     )}
                   </div>

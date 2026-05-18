@@ -11,6 +11,7 @@ interface DressingRoomStats {
   totalLooks: number
   activeRentals: number
   pendingOrders: number
+  totalRevenue: number
 }
 
 export const DressingRoomDashboard = () => {
@@ -22,9 +23,16 @@ export const DressingRoomDashboard = () => {
     totalLooks: 0,
     activeRentals: 0,
     pendingOrders: 0,
+    totalRevenue: 0,
   })
+  const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Format currency helper
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value)
+  }
 
 
 
@@ -50,8 +58,8 @@ export const DressingRoomDashboard = () => {
 
         const { data: rentals, error: rentalsError } = await supabase
           .from('rental_orders')
-          .select('id, status')
-          .in('status', ['awaiting_payment', 'paid', 'active'])
+          .select('id, status, total, order_number, customer_name, created_at')
+          .order('created_at', { ascending: false })
 
         if (rentalsError) throw rentalsError
 
@@ -60,7 +68,15 @@ export const DressingRoomDashboard = () => {
           totalLooks: looks?.length ?? 0,
           activeRentals: rentals?.filter((r: any) => r.status === 'active').length ?? 0,
           pendingOrders: rentals?.filter((r: any) => ['awaiting_payment', 'paid'].includes(r.status)).length ?? 0,
+          totalRevenue: rentals?.reduce((acc: number, r: any) => {
+            if (['paid', 'active', 'returned'].includes(r.status)) {
+              return acc + Number(r.total)
+            }
+            return acc
+          }, 0) ?? 0,
         })
+        
+        setRecentOrders(rentals?.slice(0, 5) || [])
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load stats'
         setError(message)
@@ -104,6 +120,13 @@ export const DressingRoomDashboard = () => {
       color: 'bg-orange-50 border-orange-200',
       textColor: 'text-orange-700',
     },
+    {
+      label: 'Total Pendapatan Sewa',
+      value: loading ? '...' : formatCurrency(stats.totalRevenue),
+      icon: 'payments',
+      color: 'bg-emerald-50 border-emerald-200',
+      textColor: 'text-emerald-700',
+    },
   ]
 
   const quickActions = [
@@ -144,7 +167,7 @@ export const DressingRoomDashboard = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((card, idx) => (
           <div
             key={idx}
@@ -200,12 +223,50 @@ export const DressingRoomDashboard = () => {
             Lihat Semua →
           </button>
         </div>
-        <div className="border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 p-10 flex flex-col items-center justify-center text-center">
-          <span className="material-symbols-outlined text-4xl text-gray-300 mb-3">checkroom</span>
-          <p className="text-gray-400 text-sm">
-            Klik <span className="font-bold">Lihat Semua</span> untuk melihat daftar pesanan sewa dressing room.
-          </p>
-        </div>
+        
+        {recentOrders.length === 0 ? (
+          <div className="border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 p-10 flex flex-col items-center justify-center text-center">
+            <span className="material-symbols-outlined text-4xl text-gray-300 mb-3">checkroom</span>
+            <p className="text-gray-400 text-sm">
+              Belum ada pesanan sewa.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-gray-600">
+                <tr>
+                  <th className="px-4 py-3 font-semibold rounded-tl-lg">Order</th>
+                  <th className="px-4 py-3 font-semibold">Customer</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold rounded-tr-lg">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {recentOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{order.order_number}</div>
+                      <div className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString('id-ID')}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-900">{order.customer_name}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        order.status === 'returned' ? 'bg-purple-100 text-purple-800' :
+                        order.status === 'active' ? 'bg-green-100 text-green-800' :
+                        order.status === 'paid' ? 'bg-blue-100 text-blue-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-bold text-gray-900">{formatCurrency(order.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )

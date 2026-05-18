@@ -146,6 +146,37 @@ const StoreInventory = () => {
     );
   };
 
+  const handleStockReport = () => {
+    if (!inventoryProducts.length) {
+      showToast('error', 'Tidak ada data produk untuk di-export.');
+      return;
+    }
+
+    const headers = ['Nama Produk', 'SKU', 'Kategori', 'Total Stock', 'Status Stock', 'Harga Minimum', 'Harga Maksimum'];
+    const rows = inventoryProducts.map(p => [
+      `"${(p.name || '').replace(/"/g, '""')}"`,
+      `"${(p.sku || '').replace(/"/g, '""')}"`,
+      `"${(p.category || '').replace(/"/g, '""')}"`,
+      p.stock_available,
+      `"${(p.stock_status || '').replace(/"/g, '""')}"`,
+      p.price_min,
+      p.price_max
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `stock_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    showToast('success', 'Laporan stok berhasil diunduh.');
+  };
+
   return (
     <AdminLayout
       menuItems={ADMIN_MENU_ITEMS}
@@ -164,6 +195,7 @@ const StoreInventory = () => {
             <span className="hidden sm:inline">Categories</span>
           </button>
           <button
+            onClick={handleStockReport}
             aria-label="Stock Report"
             className="flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-bold text-neutral-900 shadow-sm transition-colors hover:bg-gray-50 sm:px-4"
           >
@@ -179,6 +211,7 @@ const StoreInventory = () => {
             <span className="hidden sm:inline">CSV Import</span>
           </button>
           <button
+            onClick={productActions.handleOpenCreate}
             aria-label="Add Product"
             className="flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#ff4b86] px-3 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#ff6a9a] sm:px-4"
           >
