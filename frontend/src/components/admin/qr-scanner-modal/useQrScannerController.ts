@@ -257,22 +257,22 @@ export function useQrScannerController({
 
     const onScanFailure = () => undefined;
 
-    const pickBackCameraId = async () => {
+    const pickFrontCameraId = async () => {
       try {
         const devices = await Html5Qrcode.getCameras();
         if (!devices?.length) return null;
-        const back = devices.find((device) => {
+        const front = devices.find((device) => {
           const label = (device.label || '').toLowerCase();
-          return label.includes('back') || label.includes('rear') || label.includes('environment');
+          return label.includes('front') || label.includes('user') || label.includes('face');
         });
-        return (back?.id || devices[devices.length - 1].id) ?? null;
+        return (front?.id || devices[0].id) ?? null;
       } catch {
         return null;
       }
     };
 
     try {
-      const cameraId = await pickBackCameraId();
+      const cameraId = await pickFrontCameraId();
       if (!isScannerLifecycleActive(lifecycleId)) {
         try {
           await qr.clear();
@@ -286,9 +286,9 @@ export function useQrScannerController({
       if (cameraId) {
         await qr.start(cameraId, config, onScanSuccessHandler, onScanFailure);
       } else if (appleDevice) {
-        await qr.start({ facingMode: 'environment' }, config, onScanSuccessHandler, onScanFailure);
+        await qr.start({ facingMode: 'user' }, config, onScanSuccessHandler, onScanFailure);
       } else {
-        await qr.start({ facingMode: { exact: 'environment' } }, config, onScanSuccessHandler, onScanFailure);
+        await qr.start({ facingMode: { exact: 'user' } }, config, onScanSuccessHandler, onScanFailure);
       }
       if (!isScannerLifecycleActive(lifecycleId)) {
         await stopScanner();
@@ -297,7 +297,7 @@ export function useQrScannerController({
       setStatus('scanning');
     } catch (primaryError) {
       try {
-        await qr.start({ facingMode: 'environment' }, config, onScanSuccessHandler, onScanFailure);
+        await qr.start({ facingMode: 'user' }, config, onScanSuccessHandler, onScanFailure);
         if (!isScannerLifecycleActive(lifecycleId)) {
           await stopScanner();
           return;
