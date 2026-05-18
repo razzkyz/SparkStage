@@ -44,7 +44,7 @@ export function useBookingSelectionState(params: BookingSelectionStateParams) {
     const interval = setInterval(() => {
       setCurrentTime(nowWIB());
       console.log('[BookingPage] Current time updated:', nowWIB().toISOString());
-    }, 60000);
+    }, 5000); // Update every 5 seconds for accurate session end detection
 
     return () => clearInterval(interval);
   }, []);
@@ -243,7 +243,8 @@ export function useBookingSelectionState(params: BookingSelectionStateParams) {
     console.log(`[BookingPage] Available slots for ${dateString} at ${currentTime.toISOString()}:`, filtered.length);
 
     return filtered.map((avail) => {
-      const isPast = isToday && avail.time_slot ? !isTimeSlotBookable(dateString, avail.time_slot, currentTime) : false;
+      // Always use real-time nowWIB() to accurately detect session end
+      const isPast = isToday && avail.time_slot ? !isTimeSlotBookable(dateString, avail.time_slot, nowWIB()) : false;
 
       if (isPast) {
         console.log(`[BookingPage] Marking slot ${avail.time_slot} as past/disabled: session has ended`);

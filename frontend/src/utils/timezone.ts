@@ -29,10 +29,10 @@ export const WIB_OFFSET_MS = WIB_OFFSET_HOURS * 60 * 60 * 1000;
  * Returns a Date object representing current WIB time
  */
 export function nowWIB(): Date {
-  // Get current UTC time
-  const now = new Date();
-  // Return as-is (Date object internally stores UTC, we interpret it as WIB)
-  return now;
+  // Return actual real Date representing this exact moment. 
+  // We no longer shift by +7 hours here, as other functions (toLocalDateString, formatDateTimeWIB) 
+  // correctly handle the offset from a real Date object.
+  return new Date();
 }
 
 /**
