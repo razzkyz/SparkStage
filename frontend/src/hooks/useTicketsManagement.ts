@@ -45,33 +45,40 @@ export function useTicketsManagement() {
     queryFn: async ({ signal }) => {
       const { signal: timeoutSignal, cleanup, didTimeout } = createQuerySignal(signal);
       try {
-        const { data: ticketsData, error } = await supabase
-          .from('purchased_tickets')
-          .select(
-            `
-            id,
-            ticket_id,
-            user_id,
-            created_at,
-            status,
-            used_at,
-            ticket_code,
-            valid_date,
-            tickets!inner(name)
-          `
-          )
-          .abortSignal(timeoutSignal)
-          .order('created_at', { ascending: false })
-          .limit(50);
+        let allTicketsData: any[] = [];
+        let page = 0;
+        const pageSize = 1000;
+        while (true) {
+          const { data, error } = await supabase
+            .from('purchased_tickets')
+            .select(`
+              id,
+              ticket_id,
+              user_id,
+              created_at,
+              status,
+              used_at,
+              ticket_code,
+              valid_date,
+              tickets!inner(name)
+            `)
+            .abortSignal(timeoutSignal)
+            .order('created_at', { ascending: false })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
 
-        if (error) {
-          const err = new Error(error.message) as APIError;
-          err.status = 500;
-          err.info = error;
-          throw err;
+          if (error) {
+            const err = new Error(error.message) as APIError;
+            err.status = 500;
+            err.info = error;
+            throw err;
+          }
+          
+          allTicketsData = [...allTicketsData, ...(data || [])];
+          if (!data || data.length < pageSize) break;
+          page++;
         }
 
-        const rows = (ticketsData || []) as unknown as PurchasedTicketRow[];
+        const rows = allTicketsData as unknown as PurchasedTicketRow[];
         const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter(Boolean)));
         const { data: profilesData, error: profilesError } =
           userIds.length > 0

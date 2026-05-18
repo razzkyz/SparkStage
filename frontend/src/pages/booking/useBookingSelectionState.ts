@@ -243,7 +243,7 @@ export function useBookingSelectionState(params: BookingSelectionStateParams) {
     console.log(`[BookingPage] Available slots for ${dateString} at ${currentTime.toISOString()}:`, filtered.length);
 
     return filtered.map((avail) => {
-      const isPast = isToday && avail.time_slot ? !isTimeSlotBookable(dateString, avail.time_slot) : false;
+      const isPast = isToday && avail.time_slot ? !isTimeSlotBookable(dateString, avail.time_slot, currentTime) : false;
 
       if (isPast) {
         console.log(`[BookingPage] Marking slot ${avail.time_slot} as past/disabled: session has ended`);

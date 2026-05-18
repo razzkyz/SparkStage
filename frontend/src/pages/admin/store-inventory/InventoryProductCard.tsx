@@ -155,6 +155,7 @@ export function InventoryProductCard(props: InventoryProductCardProps) {
             <button
               type="button"
               disabled={saving}
+              onClick={() => onEdit(product.id)}
               aria-label="Restock product"
               className="flex-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
             >

@@ -6,6 +6,18 @@ import type { QrScannerControllerResult, QrScannerModalProps, QrScannerStatus } 
 
 const SCAN_DEBOUNCE_MS = 2000;
 
+const playSound = (type: 'success' | 'error') => {
+  try {
+    const fileName = type === 'success' ? 'berhasil.mp3' : 'gagal.mp3';
+    const audio = new Audio(`/sounds/${fileName}`);
+    audio.play().catch((err) => {
+      console.warn('[QRScanner] Could not play sound:', err);
+    });
+  } catch (error) {
+    console.warn('[QRScanner] Audio playback failed:', error);
+  }
+};
+
 export function useQrScannerController({
   isOpen,
   onClose,
@@ -218,6 +230,7 @@ export function useQrScannerController({
         setErrorMessage('');
         setErrorDetails('');
         scanSucceeded = true;
+        playSound('success');
       } catch (error) {
         if (!isScannerLifecycleActive(lifecycleId)) return;
         console.error('Scan processing error:', error);
@@ -225,6 +238,7 @@ export function useQrScannerController({
         const nextError = error instanceof Error ? error : new Error('Gagal memproses');
         setErrorMessage(nextError.message);
         setErrorDetails('');
+        playSound('error');
       }
 
       if (scanSucceeded && closeOnSuccess) {
@@ -369,6 +383,7 @@ export function useQrScannerController({
         setManualCode('');
         setErrorMessage('');
         setErrorDetails('');
+        playSound('success');
 
         if (closeOnSuccess) {
           trackTimer(
@@ -390,6 +405,7 @@ export function useQrScannerController({
         setStatus('error');
         setErrorMessage(nextError.message);
         setErrorDetails('');
+        playSound('error');
 
         if (closeOnError) {
           trackTimer(

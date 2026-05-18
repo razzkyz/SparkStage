@@ -47,13 +47,24 @@ export default function EventBookings() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('purchased_tickets')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let allData: PurchasedTicket[] = [];
+      let page = 0;
+      const pageSize = 1000;
 
-      if (error) throw error;
-      setBookings(data || []);
+      while (true) {
+        const { data, error } = await supabase
+          .from('purchased_tickets')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+        allData = [...allData, ...(data as PurchasedTicket[])];
+        if (!data || data.length < pageSize) break;
+        page++;
+      }
+
+      setBookings(allData);
     } catch (error) {
       console.error('Failed to fetch bookings:', error);
     } finally {

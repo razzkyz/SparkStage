@@ -81,13 +81,22 @@ function useTicketSales(enabled: boolean) {
     queryKey: ['sales-report-tickets'],
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('purchased_tickets')
-        .select('id, ticket_code, valid_date, time_slot, status, created_at, used_at, tickets(name)')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
+      let allData: TicketRowRaw[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('purchased_tickets')
+          .select('id, ticket_code, valid_date, time_slot, status, created_at, used_at, tickets(name)')
+          .order('created_at', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error) throw error;
+        allData = [...allData, ...((data ?? []) as TicketRowRaw[])];
+        if (!data || data.length < pageSize) break;
+        page++;
+      }
       // Normalize tickets from array to object
-      return ((data ?? []) as TicketRowRaw[]).map(d => ({
+      return allData.map(d => ({
         ...d,
         tickets: Array.isArray(d.tickets) ? d.tickets[0] : d.tickets,
       })) as TicketRow[];
@@ -100,13 +109,22 @@ function useProductSales(enabled: boolean) {
     queryKey: ['sales-report-products'],
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('order_products')
-        .select('id, order_number, total, payment_status, pickup_status, paid_at, created_at, profiles(name,email), order_product_items(id,quantity,price,subtotal,product_variants(name,products(name)))')
-        .eq('payment_status', 'paid')
-        .order('paid_at', { ascending: false, nullsFirst: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as ProductOrderRow[];
+      let allData: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('order_products')
+          .select('id, order_number, total, payment_status, pickup_status, paid_at, created_at, profiles(name,email), order_product_items(id,quantity,price,subtotal,product_variants(name,products(name)))')
+          .eq('payment_status', 'paid')
+          .order('paid_at', { ascending: false, nullsFirst: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error) throw error;
+        allData = [...allData, ...(data ?? [])];
+        if (!data || data.length < pageSize) break;
+        page++;
+      }
+      return allData as unknown as ProductOrderRow[];
     },
   });
 }
@@ -121,8 +139,8 @@ export default function SalesReport() {
   const today = new Date().toISOString().split('T')[0];
   const firstOfMonth = today.slice(0, 8) + '01';
 
-  const [from, setFrom] = useState(firstOfMonth);
-  const [to,   setTo]   = useState(today);
+  const [from, setFrom] = useState('');
+  const [to,   setTo]   = useState('');
   const [tab, setTab] = useState<'tickets' | 'products'>('tickets');
   const [ticketPage, setTicketPage] = useState(1);
   const [productPage, setProductPage] = useState(1);
