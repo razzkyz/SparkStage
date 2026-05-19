@@ -54,10 +54,14 @@ export default function Footer() {
               {openSection === 'social' ? <Minus className="h-4 w-4 flex-shrink-0" /> : <Plus className="h-4 w-4 flex-shrink-0" />}
             </button>
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openSection === 'social' ? 'max-h-[300px] opacity-100 pb-5' : 'max-h-0 opacity-0'}`}>
-              <div className="px-1 flex flex-col gap-4">
+              <div className="px-1 flex flex-row flex-wrap gap-8">
                 <a href="https://www.instagram.com/spark_stage55" target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline flex items-center gap-2">
-                  <img src="/images/instagram.png" alt="Instagram Icon" className="w-6 h-6 object-contain" />
+                  <img src="/images/instagram.svg" alt="Instagram Icon" className="w-6 h-6 object-contain" />
                   Instagram
+                </a>
+                <a href="https://www.tiktok.com/@spark_stage55?_r=1&_t=ZS-96TvvZn6dkL" target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline flex items-center gap-2">
+                  <img src="/images/tiktok.svg" alt="TikTok Icon" className="w-7 h-7 object-contain -ml-0.5" />
+                  TikTok
                 </a>
                 {/* <a href="#" className="text-sm font-medium hover:underline">TikTok</a>
                 <a href="#" className="text-sm font-medium hover:underline">Pinterest</a>
