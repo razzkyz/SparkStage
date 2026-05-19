@@ -22,8 +22,8 @@ import { getUserDisplayName } from '../utils/auth';
 const Navbar = () => {
   // On phones the spacer centres the active item; on tablets (md+) less
   // spacer is needed because more items fit on screen.
-  const mobileEdgeSpacerWidth = 'max(34vw, calc(50vw - 53px))';
-  const tabletEdgeSpacerWidth = 'max(18vw, calc(50vw - 180px))';
+  const mobileEdgeSpacerWidth = 'calc(50vw - 50px)';
+  const tabletEdgeSpacerWidth = 'calc(50vw - 70px)';
   const { t, i18n } = useTranslation();
   const { user, signOut, isAdmin, loggingOut } = useAuth();
   const { count: ticketCount } = useTicketCount();
@@ -421,8 +421,8 @@ const Navbar = () => {
                 left: `${desktopStarPosition}px`,
                 top: '50%',
                 transform: 'translate(-50%, -50%)',
-                width: '100px',
-                height: '100px',
+                width: '80px',
+                height: '80px',
                 zIndex: 0,
               }}
             >
