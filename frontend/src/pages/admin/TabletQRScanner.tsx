@@ -54,10 +54,14 @@ const TabletQRScanner = () => {
             ticketName: ticket.ticketName,
           },
         });
+        const audio = new Audio('/sounds/berhasil.mpeg');
+        audio.play().catch(e => console.error('Audio play error:', e));
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Tiket tidak valid';
         setNotification({ type: 'error', message });
         console.error('Validation error:', err);
+        const audio = new Audio('/sounds/gagal.mpeg');
+        audio.play().catch(e => console.error('Audio play error:', e));
       } finally {
         setValidating(false);
       }
