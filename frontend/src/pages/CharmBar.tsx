@@ -429,7 +429,7 @@ export default function CharmBar() {
           <div ref={productsRef} className="mb-8 border-b border-gray-100 pb-0 sticky top-0 bg-white z-40 pt-4 -mt-6">
             <div className="flex flex-col space-y-4">
               <div className="relative w-full max-w-md mx-auto mb-2 px-2">
-                <div className="relative">
+                <div className="relative mb-3">
                   <input
                     type="text"
                     value={searchQuery}
@@ -464,7 +464,7 @@ export default function CharmBar() {
                         container.scrollBy({ left: -200, behavior: 'smooth' });
                       }
                     }}
-                    className="absolute left-0 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all duration-200 border border-gray-200 hover:shadow-xl hover:scale-105 md:p-2.5 md:block hidden"
+                    className="absolute left-0 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all duration-200 border border-gray-200 hover:shadow-xl hover:scale-105 md:p-2.5 md:block hidden -mt-2"
                   >
                     <ChevronLeft className="w-3 h-3 md:w-4 md:h-4 text-gray-700" />
                   </button>
@@ -483,15 +483,15 @@ export default function CharmBar() {
                         });
                         scrollToCategory(0);
                       }}
-                      className={`px-3 md:px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
+                      className={`text-sm whitespace-nowrap pb-3 border-b-2 px-2 ux-transition-color ${
                         activeCategory === null
-                          ? 'bg-[#ff4b86] text-white border-[#ff4b86] shadow-sm'
-                          : 'bg-white text-gray-500 border-gray-200 hover:border-[#ff4b86] hover:text-[#ff4b86]'
+                          ? 'font-semibold text-[#ff4b86] border-[#ff4b86]'
+                          : 'font-semibold text-gray-500 border-transparent hover:text-[#ff4b86]'
                       }`}
                     >
-                      All
+                      All Products
                     </button>
-                    {availableCategories.map((category) => (
+                    {availableCategories.map((category, index) => (
                       <button
                         key={category.id}
                         type="button"
@@ -501,11 +501,12 @@ export default function CharmBar() {
                             subcategory: null,
                             subsubcategory: null,
                           });
+                          scrollToCategory(index + 1);
                         }}
-                        className={`px-3 md:px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border ux-transition-color ${
+                        className={`text-sm whitespace-nowrap pb-3 border-b-2 px-2 ux-transition-color ${
                           activeCategory === category.slug
-                            ? 'bg-[#ff4b86] text-white border-[#ff4b86] shadow-sm'
-                            : 'bg-white text-gray-500 border-gray-200 hover:border-[#ff4b86] hover:text-[#ff4b86]'
+                            ? 'font-semibold text-[#ff4b86] border-[#ff4b86]'
+                            : 'font-semibold text-gray-500 border-transparent hover:text-[#ff4b86]'
                         }`}
                       >
                         {category.name}
@@ -521,7 +522,7 @@ export default function CharmBar() {
                         container.scrollBy({ left: 200, behavior: 'smooth' });
                       }
                     }}
-                    className="absolute right-0 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all duration-200 border border-gray-200 hover:shadow-xl hover:scale-105 md:p-2.5 md:block hidden"
+                    className="absolute right-0 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-50 transition-all duration-200 border border-gray-200 hover:shadow-xl hover:scale-105 md:p-2.5 md:block hidden -mt-2"
                   >
                     <ChevronRight className="w-3 h-3 md:w-4 md:h-4 text-gray-700" />
                   </button>
