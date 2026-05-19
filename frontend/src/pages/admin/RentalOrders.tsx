@@ -23,9 +23,9 @@ interface RentalOrder {
   rental_start_time: string;
   rental_end_time: string;
   duration_days: number;
-  subtotal: number;
-  deposit_amount: number;
-  total: number;
+  total_rental_cost: number;
+  total_deposit: number;
+  total_amount: number;
   status: RentalOrderStatus;
   payment_status: string;
   return_time: string | null;
@@ -238,7 +238,7 @@ export default function RentalOrders() {
         .from('rental_orders')
         .update({
           refund_processed: true,
-          refund_amount: selectedOrder.deposit_amount - selectedOrder.late_fee_amount - selectedOrder.damage_fee_amount,
+          refund_amount: selectedOrder.total_deposit - selectedOrder.late_fee_amount - selectedOrder.damage_fee_amount,
           status: 'refunded',
         })
         .eq('id', selectedOrder.id);
@@ -607,7 +607,7 @@ export default function RentalOrders() {
                   </div>
                 </td>
                 <td className="px-4 py-3 font-semibold text-gray-900">
-                  {formatCurrency(order.total)}
+                  {formatCurrency(order.total_amount)}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
@@ -833,15 +833,15 @@ export default function RentalOrders() {
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-semibold">{formatCurrency(selectedOrder.subtotal)}</span>
+                  <span className="font-semibold">{formatCurrency(selectedOrder.total_rental_cost)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Total Deposit</span>
-                  <span className="font-semibold">{formatCurrency(selectedOrder.deposit_amount)}</span>
+                  <span className="font-semibold">{formatCurrency(selectedOrder.total_deposit)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Total Bayar</span>
-                  <span className="font-bold text-lg">{formatCurrency(selectedOrder.total)}</span>
+                  <span className="font-bold text-lg">{formatCurrency(selectedOrder.total_amount)}</span>
                 </div>
               </div>
 
@@ -1120,7 +1120,7 @@ function RefundModal({
   onClose: () => void;
   onSubmit: () => void;
 }) {
-  const refundAmount = order.deposit_amount - order.late_fee_amount - order.damage_fee_amount;
+  const refundAmount = order.total_deposit - order.late_fee_amount - order.damage_fee_amount;
 
   return (
     <motion.div
@@ -1150,7 +1150,7 @@ function RefundModal({
               </span>
             </div>
             <div className="mt-2 text-xs text-green-700">
-              Deposit: {formatCurrency(order.deposit_amount)} - Denda: {formatCurrency(order.late_fee_amount)} - Kerusakan: {formatCurrency(order.damage_fee_amount)}
+              Deposit: {formatCurrency(order.total_deposit)} - Denda: {formatCurrency(order.late_fee_amount)} - Kerusakan: {formatCurrency(order.damage_fee_amount)}
             </div>
           </div>
 
