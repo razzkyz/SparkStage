@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Minus, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
 
@@ -18,10 +18,15 @@ export default function Footer() {
 
   return (
     <footer className="mt-auto bg-[#fcf2f5] text-gray-900 border-t border-gray-200">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8 lg:px-10 lg:py-16">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         
-        <div className="mb-10 text-center sm:text-left">
-          <Link to="/" aria-label="SPARK home" className="inline-block">
+        <div className="mb-6 lg:mb-8 text-center lg:text-left">
+          <Link 
+            to="/" 
+            aria-label="SPARK home" 
+            className="inline-block"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
             <Logo className="h-10 md:h-12 w-auto drop-shadow-sm" />
           </Link>
         </div>
@@ -31,11 +36,11 @@ export default function Footer() {
           {/* ABOUT SPARK */}
           <div className="border-b border-gray-900">
             <button 
-              className="w-full flex justify-between items-center py-5 text-xs md:text-sm font-semibold tracking-widest text-left"
+              className="w-full flex justify-between items-center py-4 text-xs md:text-sm font-semibold tracking-widest text-left hover:text-main-600 transition-colors"
               onClick={() => toggleSection('about')}
             >
               ABOUT SPARK
-              {openSection === 'about' ? <Minus className="h-4 w-4 flex-shrink-0" /> : <Plus className="h-4 w-4 flex-shrink-0" />}
+              <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-300 ${openSection === 'about' ? 'rotate-180' : ''}`} />
             </button>
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openSection === 'about' ? 'max-h-[500px] opacity-100 pb-5' : 'max-h-0 opacity-0'}`}>
               <div className="px-1 text-sm text-gray-700 leading-relaxed max-w-3xl">
@@ -47,11 +52,11 @@ export default function Footer() {
           {/* SOCIAL MEDIA */}
           <div className="border-b border-gray-900">
             <button 
-              className="w-full flex justify-between items-center py-5 text-xs md:text-sm font-semibold tracking-widest text-left"
+              className="w-full flex justify-between items-center py-4 text-xs md:text-sm font-semibold tracking-widest text-left hover:text-main-600 transition-colors"
               onClick={() => toggleSection('social')}
             >
               SOCIAL MEDIA
-              {openSection === 'social' ? <Minus className="h-4 w-4 flex-shrink-0" /> : <Plus className="h-4 w-4 flex-shrink-0" />}
+              <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-300 ${openSection === 'social' ? 'rotate-180' : ''}`} />
             </button>
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openSection === 'social' ? 'max-h-[300px] opacity-100 pb-5' : 'max-h-0 opacity-0'}`}>
               <div className="px-1 flex flex-row flex-wrap gap-8">
@@ -75,10 +80,10 @@ export default function Footer() {
             <a 
               href="https://maps.app.goo.gl/pokcorVBeg5irwRQ8"
               target="_blank" rel="noopener noreferrer"
-              className="w-full flex justify-between items-center py-5 text-xs md:text-sm font-semibold tracking-widest text-left hover:text-main-600 transition-colors"
+              className="w-full flex justify-between items-center py-4 text-xs md:text-sm font-semibold tracking-widest text-left hover:text-main-600 transition-colors"
             >
               FIND YOUR STORE
-              <ArrowRight className="h-4 w-4 flex-shrink-0" />
+              <ChevronRight className="h-4 w-4 flex-shrink-0" />
             </a>
           </div>
 
@@ -87,10 +92,10 @@ export default function Footer() {
             <a 
               href="https://wa.me/6281558200089"
               target="_blank" rel="noopener noreferrer"
-              className="w-full flex justify-between items-center py-5 text-xs md:text-sm font-semibold tracking-widest text-left hover:text-main-600 transition-colors"
+              className="w-full flex justify-between items-center py-4 text-xs md:text-sm font-semibold tracking-widest text-left hover:text-main-600 transition-colors"
             >
               CONTACT US
-              <ArrowRight className="h-4 w-4 flex-shrink-0" />
+              <ChevronRight className="h-4 w-4 flex-shrink-0" />
             </a>
           </div>
           
