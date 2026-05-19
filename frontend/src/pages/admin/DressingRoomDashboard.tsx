@@ -5,6 +5,9 @@ import AdminLayout from '../../components/AdminLayout'
 import { ADMIN_MENU_ITEMS } from '../../constants/adminMenu'
 import { useAdminMenuSections } from '../../hooks/useAdminMenuSections'
 import { supabase } from '../../lib/supabase'
+import { DressingRoomCSVImportModal } from '../../components/admin/DressingRoomCSVImportModal'
+import { saveInventoryProductMutation } from './store-inventory/inventoryProductMutations'
+import { useToast } from '../../components/Toast'
 
 interface DressingRoomStats {
   totalCollections: number
@@ -15,9 +18,12 @@ interface DressingRoomStats {
 }
 
 export const DressingRoomDashboard = () => {
-  const { user, signOut } = useAuth()
+  const { user, session, signOut, getValidAccessToken, refreshSession } = useAuth()
   const navigate = useNavigate()
   const menuSections = useAdminMenuSections()
+  const { showToast } = useToast()
+  const [showCSVImport, setShowCSVImport] = useState(false)
+  const [isImportingCSV, setIsImportingCSV] = useState(false)
   const [stats, setStats] = useState<DressingRoomStats>({
     totalCollections: 0,
     totalLooks: 0,
@@ -43,34 +49,27 @@ export const DressingRoomDashboard = () => {
         setLoading(true)
         setError(null)
 
-        const { data: collections, error: collectionsError } = await supabase
-          .from('dressing_room_collections')
-          .select('id')
-          .eq('is_active', true)
+        // Get filtered collections and looks for Dressing Room category
+        const { data: statsData, error: statsError } = await supabase
+          .rpc('get_dressing_room_dashboard_stats')
 
-        if (collectionsError) throw collectionsError
-
-        const { data: looks, error: looksError } = await supabase
-          .from('dressing_room_looks')
-          .select('id')
-
-        if (looksError) throw looksError
+        if (statsError) throw statsError
 
         const { data: rentals, error: rentalsError } = await supabase
           .from('rental_orders')
-          .select('id, status, total, order_number, customer_name, created_at')
+          .select('id, status, total_amount, order_number, customer_name, created_at')
           .order('created_at', { ascending: false })
 
         if (rentalsError) throw rentalsError
 
         setStats({
-          totalCollections: collections?.length ?? 0,
-          totalLooks: looks?.length ?? 0,
+          totalCollections: statsData?.total_collections ?? 0,
+          totalLooks: statsData?.total_looks ?? 0,
           activeRentals: rentals?.filter((r: any) => r.status === 'active').length ?? 0,
           pendingOrders: rentals?.filter((r: any) => ['awaiting_payment', 'paid'].includes(r.status)).length ?? 0,
           totalRevenue: rentals?.reduce((acc: number, r: any) => {
             if (['paid', 'active', 'returned'].includes(r.status)) {
-              return acc + Number(r.total)
+              return acc + Number(r.total_amount)
             }
             return acc
           }, 0) ?? 0,
@@ -148,7 +147,55 @@ export const DressingRoomDashboard = () => {
       icon: 'qr_code_scanner',
       action: () => navigate('/admin/dressing-room-scan'),
     },
+    {
+      title: 'Import CSV Katalog',
+      description: 'Import produk dressing room via CSV',
+      icon: 'upload_file',
+      action: () => setShowCSVImport(true),
+    },
   ]
+
+  const handleCSVImport = async (drafts: any[]) => {
+    setIsImportingCSV(true)
+    let successCount = 0
+    let failCount = 0
+
+    try {
+      const { data: category } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('name', 'Dressing Room')
+        .single()
+      
+      const categoryId = category?.id || null
+
+      for (const draft of drafts) {
+        try {
+          await saveInventoryProductMutation({
+            draft: { ...draft, category_id: categoryId },
+            newImages: [],
+            removedImageUrls: [],
+            auth: { session, getValidAccessToken, refreshSession },
+          })
+          successCount++
+        } catch (error) {
+          failCount++
+          console.error(`Failed to import ${draft.name}:`, error)
+        }
+      }
+
+      showToast(
+        failCount === 0 ? 'success' : 'info',
+        `Import selesai: ${successCount} produk berhasil${failCount > 0 ? `, ${failCount} gagal` : ''}`
+      )
+    } catch (error) {
+      console.error('Failed to process CSV import:', error)
+      showToast('error', 'Terjadi kesalahan saat memproses import CSV')
+    } finally {
+      setIsImportingCSV(false)
+      setShowCSVImport(false)
+    }
+  }
 
   return (
     <AdminLayout
@@ -260,7 +307,7 @@ export const DressingRoomDashboard = () => {
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-bold text-gray-900">{formatCurrency(order.total)}</td>
+                    <td className="px-4 py-3 font-bold text-gray-900">{formatCurrency(order.total_amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -268,6 +315,13 @@ export const DressingRoomDashboard = () => {
           </div>
         )}
       </div>
+
+      <DressingRoomCSVImportModal
+        isOpen={showCSVImport}
+        onClose={() => setShowCSVImport(false)}
+        onImport={handleCSVImport}
+        isImporting={isImportingCSV}
+      />
     </AdminLayout>
   )
 }

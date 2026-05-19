@@ -43,20 +43,33 @@ export interface PurchasedTicketRow {
 export interface OrderItem {
   id: number;
   order_id: number;
-  quantity?: number | null;
+  ticket_id: number;
+  selected_date: string;
+  selected_time_slots: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
 }
 
 export interface OrderRow {
   id: number;
   order_number: string;
+  user_id?: string | null;
   status: string;
   customer_name?: string | null;
   customer_email?: string | null;
   customer_phone?: string | null;
+  total_amount?: number | null;
   expires_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   profiles?: {
     name?: string | null;
   } | null;
+}
+
+export interface OrderDataFromRpc extends OrderRow {
+  order_items: Array<OrderItem | Omit<OrderItem, 'order_id'>>;
 }
 
 export type OrderData = OrderRow & { order_items: OrderItem[] };

@@ -44,6 +44,7 @@ export const DRESSING_ROOM_ADMIN_MENU_SECTIONS: AdminMenuSection[] = [
     id: 'dressing-room',
     label: 'Dressing Room',
     items: [
+      { id: 'dressing-room-dashboard', label: 'Dashboard Dressing', icon: 'dashboard', path: '/admin/dressing-room-dashboard' },
       { id: 'dressing-room', label: 'Dressing Room Manager', icon: 'styler', path: '/admin/dressing-room' },
       { id: 'rental-orders', label: 'Sewa Dressing Room', icon: 'checkroom', path: '/admin/rental-orders', highlight: true },
       { id: 'dressing-room-scan', label: 'Scan QR Customer', icon: 'qr_code_scanner', path: '/admin/dressing-room-scan', highlight: true },
@@ -93,6 +94,7 @@ export const ADMIN_MENU_SECTIONS: AdminMenuSection[] = [
     id: 'dressing-room',
     label: 'Dressing Room',
     items: [
+      { id: 'dressing-room-dashboard', label: 'Dashboard Dressing', icon: 'dashboard', path: '/admin/dressing-room-dashboard' },
       { id: 'dressing-room', label: 'Dressing Room Manager', icon: 'styler', path: '/admin/dressing-room' },
       { id: 'rental-orders', label: 'Sewa Dressing Room', icon: 'checkroom', path: '/admin/rental-orders', highlight: true },
       { id: 'dressing-room-scan', label: 'Scan QR Customer', icon: 'qr_code_scanner', path: '/admin/dressing-room-scan', highlight: true },
