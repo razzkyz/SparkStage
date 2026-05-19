@@ -1,6 +1,7 @@
 import type { BookingPageSettings } from '../../hooks/useBookingPageSettings';
 import { formatCurrency } from '../../utils/formatters';
 import type { TicketData } from '../../types';
+import { m } from 'framer-motion';
 
 type JourneySummaryCardProps = {
   copy: Pick<
@@ -102,14 +103,21 @@ export function JourneySummaryCard({
       <p className="text-center text-xs md:text-xs text-gray-500 mt-3 md:mt-4">{copy.secure_checkout_label}</p>
 
       <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200">
-        <p className="text-xs md:text-sm font-bold uppercase tracking-wider text-gray-700 mb-2 md:mb-3">{copy.important_info_title}</p>
+        <m.p 
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="text-xs md:text-sm font-bold uppercase tracking-wider text-red-600 text-center mb-2 md:mb-3"
+        >
+          {copy.important_info_title}
+        </m.p>
         <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-gray-600">
           {copy.important_info_items.map((item, index) => (
             <li
               key={`${item}-${index}`}
-              className={index === copy.important_info_items.length - 1 ? 'text-red-600 font-medium' : undefined}
+              className={`flex items-start gap-2 ${index === copy.important_info_items.length - 1 ? 'text-red-600 font-medium' : ''}`}
             >
-              • {item}
+              <span className="shrink-0 mt-[1px]">•</span>
+              <span>{item}</span>
             </li>
           ))}
         </ul>

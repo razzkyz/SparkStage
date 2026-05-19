@@ -8,7 +8,7 @@ import { useTicketBookingSettings } from '../hooks/useTicketBookingSettings';
 import { useToast } from '../components/Toast';
 import { PageTransition } from '../components/PageTransition';
 import TicketCardSkeleton from '../components/skeletons/TicketCardSkeleton';
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
 import { BookingCalendarPanel } from './booking/BookingCalendarPanel';
 import { BookingProgressHeader } from './booking/BookingProgressHeader';
 import { BookingSummarySidebar } from './booking/BookingSummarySidebar';
@@ -167,7 +167,9 @@ export default function BookingPage() {
             </div>
 
             {/* ⚠️ Booking reminder notice */}
-            <div
+            <m.div
+              animate={{ scale: [1, 1.02, 1] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -186,10 +188,16 @@ export default function BookingPage() {
                 warning
               </span>
               <p style={{ fontSize: '13.5px', color: '#7a4f00', margin: 0, lineHeight: '1.55' }}>
-                <strong>Perhatian!</strong> Pastikan memilih jadwal dan tanggal yang benar — jangan
-                sampai salah ya. <em>See you in stage! 🌟</em>
+                <strong>Perhatian!</strong> Pastikan memilih jadwal dan tanggal yang benar dan{' '}
+                <strong 
+                  className="cursor-pointer hover:text-[#c87f00] hover:underline transition-colors duration-200"
+                  onClick={() => setShowTermsModal(true)}
+                >
+                  membaca syarat dan ketentuan
+                </strong>{' '}
+                terlebih dahulu — jangan sampai salah ya. <em>See you in stage! 🌟</em>
               </p>
-            </div>
+            </m.div>
 
 
 

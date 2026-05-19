@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { toLocalDateString } from '../utils/timezone';
@@ -111,7 +112,9 @@ const Booking = () => {
               ) : (
                 <>
                   {/* ⚠️ Booking reminder notice */}
-                  <div
+                  <motion.div
+                    animate={{ scale: [1, 1.02, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                     style={{
                       display: 'flex',
                       alignItems: 'flex-start',
@@ -129,10 +132,9 @@ const Booking = () => {
                       warning
                     </span>
                     <p style={{ fontSize: '13px', color: '#7a4f00', margin: 0, lineHeight: '1.55' }}>
-                      <strong>Perhatian!</strong> Pastikan memilih jadwal dan tanggal yang benar,
-                      jangan sampai salah ya. <em>See you in stage! 🌟</em>
+                      <strong>Perhatian!</strong> Pastikan memilih jadwal dan tanggal yang benar,jangan sampai salah ya. <em>See you in stage! 🌟</em>
                     </p>
-                  </div>
+                  </motion.div>
 
 
 
